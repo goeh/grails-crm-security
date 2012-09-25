@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-
-
 package grails.plugins.crm.security
 
 import org.springframework.dao.DataIntegrityViolationException
