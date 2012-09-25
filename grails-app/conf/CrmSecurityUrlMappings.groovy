@@ -17,6 +17,10 @@
 class CrmSecurityUrlMappings {
 
     static mappings = {
+        name 'crm-register': "/register" {
+            controller = 'crmRegister'
+            action = 'index'
+        }
         name 'crm-settings': "/settings" {
             controller = 'crmSettings'
             action = 'index'
