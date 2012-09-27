@@ -55,9 +55,9 @@ Specific security implementeations exists for Apache Shiro (crm-security-shiro).
             required true
             hidden true
             permissions {
-                guest "crmTenant:index,activate"
-                user "crmTenant:index,activate,create,edit"
-                admin "crmTenant:*"
+                guest "crmTenant:index,activate", "crmSettings:*"
+                user "crmTenant:index,activate,create,edit", "crmSettings:*"
+                admin "crmTenant,crmSettings:*"
             }
         }
         register {

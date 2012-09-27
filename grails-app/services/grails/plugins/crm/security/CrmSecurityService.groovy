@@ -387,12 +387,13 @@ class CrmSecurityService {
         if (!username) {
             username = crmSecurityDelegate.currentUser
             if (!username) {
-                throw new IllegalArgumentException("not authenticated")
+                return false
             }
         }
         def user = CrmUser.findByUsernameAndEnabled(username, true, [cache: true])
         if (!user) {
-            throw new CrmException("user.not.found.message", [username])
+            log.warn "SECURITY: User [${username}] is authenticated but not enabled!"
+            return false
         }
         if (user.accounts.find {it.id == tenantId}) {
             return true // User own this tenant

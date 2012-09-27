@@ -59,7 +59,7 @@ class ResetPasswordDelegate {
 
     def resetPassword(String username, String password) {
         log.debug "resetPassword: Changing password for [$username]"
-        crmSecurityService.updateUser([username: username, password: password, enabled:true, loginFailures: 0])
+        crmSecurityService.updateUser(username, [password: password, enabled:true, loginFailures: 0])
         return username
     }
 
