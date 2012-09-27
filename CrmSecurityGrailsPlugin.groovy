@@ -57,7 +57,7 @@ Specific security implementeations exists for Apache Shiro (crm-security-shiro).
             permissions {
                 guest "crmTenant:index,activate", "crmSettings:*"
                 user "crmTenant:index,activate,create,edit", "crmSettings:*"
-                admin "crmTenant,crmSettings:*"
+                admin "security,crmTenant,crmSettings:*"
             }
         }
         register {

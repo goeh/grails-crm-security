@@ -135,7 +135,7 @@
                                    value="${CrmTenant.get(role.role.tenantId)}"/>
                             <td>${account.encodeAsHTML()}</td>
                             <td>${account.user == user ? 'Jag' : account.user.name.encodeAsHTML()}</td>
-                            <td>${message(code: 'role.' + role.toString() + '.label', default: role.toString())}</td>
+                            <td>${message(code: 'crmRole.role.' + role.toString() + '.label', default: role.toString())}</td>
                         </tr>
                     </g:each>
                     </tbody>

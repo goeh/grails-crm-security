@@ -94,7 +94,7 @@ class CrmSecurityService {
         crmSecurityDelegate.createUser(user.username, props.password)
 
         def userInfo = user.dao
-        event(for: "crm", topic: "userCreated", data: userInfo + [ip:props.ip])
+        event(for: "crm", topic: "userCreated", data: userInfo + [ip: props.ip])
         return userInfo
     }
 
@@ -524,6 +524,23 @@ class CrmSecurityService {
             username = crmSecurityDelegate.currentUser
         }
         username ? CrmUser.findByUsername(username, [cache: true]) : null
+    }
+
+    /**
+     * Check if the argument is the current user.
+     * The argument can be a Long (id), String (username) or CrmUser instance.
+     *
+     * @param arg Long (id), String (username) or CrmUser instance.
+     * @return true if the current user is the same as specified user parameter
+     */
+    boolean isCurrentUser(arg) {
+        def username = crmSecurityDelegate.currentUser
+        if (arg instanceof Number) {
+            return CrmUser.get(arg)?.username == username
+        } else if (arg instanceof CrmUser) {
+            return arg.username == username
+        }
+        return arg.toString() == username
     }
 
     private Set<Long> getAllTenants(String username = null) {

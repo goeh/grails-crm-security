@@ -37,5 +37,9 @@ class CrmSecurityUrlMappings {
             controller = 'crmTenant'
             action = 'activate'
         }
+        name 'crm-permissions': "/account/permissions" {
+            controller = 'crmTenant'
+            action = 'permissions'
+        }
     }
 }

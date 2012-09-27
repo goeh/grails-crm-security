@@ -30,8 +30,12 @@ import grails.plugins.crm.core.TenantEntity
 class CrmUserPermission {
 
     String permissionsString
-
-    static belongsTo = [user:CrmUser]
+    java.sql.Date expires
+    static belongsTo = [user: CrmUser]
+    static constraints = {
+        permissionsString(maxSize: 255, blank: false)
+        expires(nullable: true)
+    }
 
     static mapping = {
         table 'crm_user_permission'

@@ -30,6 +30,14 @@ class CrmTenantController {
 
     static allowedMethods = [index: 'GET', create: ['GET', 'POST'], activate: ['GET', 'POST']]
 
+    static navigation = [
+            [group: 'settings',
+                    order: 30,
+                    title: 'crmTenant.permissions.label',
+                    action: 'permissions'
+            ]
+    ]
+
     private static final List TENANT_BIND_WHITELIST = ['name']
 
     def crmSecurityService
@@ -171,8 +179,8 @@ class CrmTenantController {
 
                 if (!crmTenant.save(flush: true)) {
                     render view: 'edit', model: [crmTenant: crmTenant, user: crmSecurityService.currentUser,
-                        permissions: crmSecurityService.getTenantPermissions(crmTenant.id),
-                        showCosts: showCosts, partner2: partner2, invitationList: invitations, features: features, moreFeatures: moreFeatures]
+                            permissions: crmSecurityService.getTenantPermissions(crmTenant.id),
+                            showCosts: showCosts, partner2: partner2, invitationList: invitations, features: features, moreFeatures: moreFeatures]
                     return
                 }
 
@@ -218,6 +226,74 @@ class CrmTenantController {
         }
     }
 
+    def permissions() {
+        def id = TenantUtils.tenant
+        def crmTenant = CrmTenant.get(id)
+        if (!crmTenant) {
+            flash.error = message(code: 'crmTenant.not.found.message', args: [message(code: 'crmTenant.label', default: 'Account'), id])
+            redirect action: 'index'
+            return
+        }
+        def invitations = crmInvitationService ? crmInvitationService.getInvitationsFor(crmTenant, crmTenant.id) : []
+        def currentUser = crmSecurityService.getUser()
+        return [me: currentUser, crmTenant: crmTenant, permissions: crmSecurityService.getTenantPermissions(crmTenant.id),
+                invitations: invitations]
+    }
+
+    def deleteRole(Long id) {
+        def role = CrmUserRole.get(id)
+        if (!role) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND)
+            return
+        }
+        if (crmSecurityService.isCurrentUser(role.user)) {
+            flash.error = message(code: 'crmUserRole.cannot.delete.self', default: 'You cannot delete your own roles')
+        } else {
+            def user = role.user
+            user.removeFromRoles(role)
+            //role.delete(flush: true)
+            user.save(flush: true)
+            flash.warning = message(code: 'crmUserRole.deleted.message', default: "Role deleted")
+        }
+        redirect action: 'permissions'
+    }
+
+    def deletePermission(Long id) {
+        def perm = CrmUserPermission.get(id)
+        if (!perm) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND)
+            return
+        }
+        if (crmSecurityService.isCurrentUser(perm.user)) {
+            flash.error = message(code: 'crmUserPermission.cannot.delete.self', default: 'You cannot delete your own permissions')
+        } else {
+            def user = perm.user
+            user.removeFromPermissions(perm)
+            //perm.delete(flush: true)
+            user.save(flush: true)
+            flash.warning = message(code: 'crmUserPermission.deleted.message', default: "Permission removed")
+        }
+        redirect action: 'permissions'
+    }
+
+    def deleteInvitation(Long id) {
+        def crmInvitation = crmInvitationService.getInvitation(id)
+        if (crmInvitation) {
+            def user = crmSecurityService.currentUser
+            if (crmInvitation.sender != user.username) {
+                log.warn("Invalid user [${user.username}] trying to cancel invitation [${crmInvitation.id}] for [${crmInvitation.receiver}]")
+                response.sendError(HttpServletResponse.SC_FORBIDDEN)
+                return
+            }
+            def label = crmInvitation.receiver
+            crmInvitationService.cancel(crmInvitation.id)
+            flash.warning = message(code: "crmInvitation.deleted.message", default: "Invitation to {0} deleted", args: [label])
+        } else {
+            flash.error = message(code: 'default.not.found.message', args: [message(code: 'crmInvitation.label', default: 'Invitation'), id])
+        }
+        redirect(action: "permissions")
+    }
+
     def share(Long id, String email, String msg, String role) {
         def crmTenant = CrmTenant.get(id)
         if (!crmTenant) {
@@ -225,14 +301,15 @@ class CrmTenantController {
             return
         }
 
-        event(for: "crm", topic: "tenantShared", data: [id: id, email: email, role: role, message: msg, user: crmSecurityService.currentUser.username])
-
-        flash.success = message(code: 'crmTenant.share.success.message', args: [crmTenant.name, email, msg])
+        if (email) {
+            event(for: "crm", topic: "tenantShared", data: [id: id, email: email, role: role, message: msg, user: crmSecurityService.currentUser.username])
+            flash.success = message(code: 'crmTenant.share.success.message', args: [crmTenant.name, email, msg])
+        }
 
         if (params.referer) {
             redirect(uri: params.referer - request.contextPath)
         } else {
-            redirect action: 'edit', id: id, fragment: 'perm'
+            redirect action: "permissions"
         }
     }
 }

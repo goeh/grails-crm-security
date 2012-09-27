@@ -26,8 +26,6 @@
     <li class="active"><a href="#main" data-toggle="tab">Vyuppgifter</a></li>
     <li><a href="#features" data-toggle="tab">Funktioner<crm:countIndicator
             count="${features.findAll {!it.hidden}.size()}"/></a></li>
-    <li><a href="#perm" data-toggle="tab">Behörigheter<crm:countIndicator
-            count="${permissions.size() + invitationList.size()}"/></a></li>
 </ul>
 
 <div class="tab-content">
@@ -253,66 +251,6 @@
     </div>
 
 </div>
-
-<div id="perm" class="tab-pane">
-    <table class="table table-bordered">
-        <thead>
-        <tr>
-            <th>Användare</th>
-            <th>Roll</th>
-            <th>Behörigheter</th>
-            <th>Gäller t.o.m</th>
-            <th>Status</th>
-        </tr>
-        </thead>
-        <tbody>
-        <g:each in="${permissions}" var="perm">
-            <tr>
-                <td>${perm.user.name}</td>
-                <g:if test="${perm instanceof CrmUserRole}">
-                    <td>${message(code: 'role.' + perm.toString() + '.label', default: perm.toString())}</td>
-                    <td>
-                        <crm:permissionList permission="${perm.role.permissions}">
-                            ${it.label}<br/>
-                        </crm:permissionList>
-                    </td>
-                    <td><g:formatDate type="date" date="${perm.expires}"/></td>
-                    <td>${perm.expires == null || perm.expires > new Date() ? 'Aktiv' : 'Inaktiv'}</td>
-                </g:if>
-                <g:if test="${perm instanceof CrmUserPermission}">
-                    <td></td>
-                    <td>
-                        <crm:permissionList permission="${perm.permissionsString}">
-                            ${it.label}<br/>
-                        </crm:permissionList>
-                    </td>
-                    <td></td>
-                    <td>Aktiv</td>
-                </g:if>
-            </tr>
-        </g:each>
-
-        <g:each in="${invitationList}" var="inv">
-            <tr>
-                <td>${inv.receiver?.encodeAsHTML()}</td>
-                <td>${inv.param?.encodeAsHTML()}</td>
-                <td></td>
-                <td><g:formatDate format="yyyy-MM-dd" date="${inv.dateCreated}"/></td>
-                <td>Inbjudan skickad</td>
-            </tr>
-        </g:each>
-        </tbody>
-    </table>
-
-    <crm:hasPlugin name="crm-invitation">
-        <div class="form-actions">
-            <crm:button type="url" visual="primary" icon="icon-share-alt icon-white" data-toggle="modal"
-                        href="#modal-share-account"
-                        label="crmTenant.button.share.label" permission="crmInvitation:share"/>
-        </div>
-    </crm:hasPlugin>
-</div>
-
 </div>
 </div>
 
@@ -336,61 +274,6 @@
                         data-dismiss="modal"/>
             <crm:button visual="danger" icon="icon-trash icon-white" action="delete"
                         label="crmTenant.delete.confirm.yes" args="${[crmTenant.name]}"/>
-        </g:form>
-    </div>
-</div>
-
-<div id="modal-share-account" class="modal hide">
-    <div class="modal-header">
-        <a href="#" class="close" data-dismiss="modal">&times;</a>
-
-        <h3><g:message code="crmTenant.share.title" args="${[crmTenant.name]}"/></h3>
-    </div>
-
-    <div class="well">
-        <g:form action="share">
-            <input type="hidden" name="id" value="${crmTenant.id}"/>
-
-            <div class="modal-body">
-                <p><g:message code="crmTenant.share.message" args="${[crmTenant.name]}"/></p>
-            </div>
-
-            <div class="control-group">
-                <label class="control-label">E-postadress</label>
-
-                <div class="controls">
-                    <input type="email" name="email" class="span4"
-                           placeholder="E-postadress till den du vill bjuda in..."/>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <label class="control-label">Behörighet</label>
-
-                <div class="controls">
-                    <label class="radio inline"><g:radio value="guest" name="role" checked="checked"/>Läsa</label>
-                    <label class="radio inline"><g:radio value="user" name="role"/>Ändra</label>
-                    <label class="radio inline"><g:radio value="admin" name="role"/>Administrera</label>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <label class="control-label">Meddelande (frivilligt)</label>
-
-                <div class="controls">
-                    <textarea name="msg" placeholder="Personligt meddelande..." class="span5" cols="40"
-                              rows="3"></textarea>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-
-                <crm:button visual="primary" icon="icon-ok icon-white" action="share"
-                            label="crmTenant.button.share.confirm.yes" args="${[crmTenant.name]}"/>
-                <crm:button type="url" icon="icon-remove" href="#"
-                            label="crmTenant.button.share.confirm.no" args="${[crmTenant.name]}"
-                            data-dismiss="modal"/>
-            </div>
         </g:form>
     </div>
 </div>
