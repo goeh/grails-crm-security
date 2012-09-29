@@ -34,6 +34,9 @@ class RegisterUserCommand implements Serializable {
     String campaign
     String captcha
     String ip
+    boolean accepted
+
+    def grailsApplication
 
     static constraints = {
         username(size: 3..80, maxSize: 80, nullable: false, blank: false, validator: {val, obj->
@@ -49,5 +52,11 @@ class RegisterUserCommand implements Serializable {
         campaign(maxSize:80, nullable:true)
         captcha(maxSize:10, blank:false)
         ip(maxSize: 80, nullable: true)
+        accepted(validator: {val, obj ->
+            if (obj.grailsApplication.config.crm.register.legal && !val) {
+                return 'register.legal.false.message'
+            }
+            return null
+        })
     }
 }

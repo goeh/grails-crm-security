@@ -37,43 +37,56 @@
             <f:with bean="${cmd}">
                 <f:field property="username" label="register.username.label">
                     <g:textField name="username" value="${cmd.username}" autofocus="" required=""
-                                 placeholder="${message(code:'register.username.placeholder')}"/>
+                                 placeholder="${message(code: 'register.username.placeholder')}"/>
                 </f:field>
                 <f:field property="name" label="register.name.label">
                     <g:textField name="name" value="${cmd.name}" required=""
-                                 placeholder="${message(code:'register.name.placeholder')}"/>
+                                 placeholder="${message(code: 'register.name.placeholder')}"/>
                 </f:field>
                 <f:field property="email" label="register.email.label">
                     <input type="email" name="email" id="email" value="${cmd.email?.encodeAsHTML()}"
-                            required="" placeholder="${message(code: 'register.email.placeholder')}"/>
+                           required="" placeholder="${message(code: 'register.email.placeholder')}"/>
                 </f:field>
                 <f:field property="password" label="register.password.label">
                     <g:passwordField name="password" value="${cmd.password}" required=""
-                                     placeholder="${message(code:'register.password.placeholder')}"/>
+                                     placeholder="${message(code: 'register.password.placeholder')}"/>
                 </f:field>
                 <f:field property="telephone" label="register.telephone.label">
                     <g:textField name="telephone" value="${cmd.telephone}"
-                                 placeholder="${message(code:'register.telephone.placeholder')}"/>
+                                 placeholder="${message(code: 'register.telephone.placeholder')}"/>
                 </f:field>
                 <f:field property="postalCode" label="register.postalCode.label">
                     <g:textField name="postalCode" value="${cmd.postalCode}" required=""
-                                 placeholder="${message(code:'register.postalCode.placeholder')}"/>
+                                 placeholder="${message(code: 'register.postalCode.placeholder')}"/>
                 </f:field>
                 <f:field property="country" label="register.country.label">
-                    <g:countrySelect name="country" value="${cmd.country}" noSelection="[null:'']"/>
+                    <g:countrySelect name="country" value="${cmd.country}" noSelection="[null: '']"/>
                 </f:field>
 
                 <f:field property="campaign" label="register.campaign.label">
                     <g:textField name="campaign" value="${cmd.campaign}"
-                                 placeholder="${message(code:'register.campaign.placeholder')}"/>
+                                 placeholder="${message(code: 'register.campaign.placeholder')}"/>
                 </f:field>
+
+                <g:if test="${grailsApplication.config.crm.register.legal}">
+                    <f:field property="accepted" label="register.accepted.label">
+                        <label class="checkbox">
+                            <g:checkBox name="accepted" value="${cmd.accepted}"/>
+                            <g:message code="register.accepted.message" default="I accepts the terms {0}"
+                                       args="${[createLink(mapping: 'crm-user-agreement', params: [layout: 'blank'])]}"/>
+                        </label>
+                    </f:field>
+                </g:if>
+
             </f:with>
 
             <div class="control-group ${hasErrors(bean: cmd, field: 'captcha', 'error')}">
-                <label class="control-label" for="captcha"><g:message code="register.captcha.label" default="Enter Security Code"/></label>
+                <label class="control-label" for="captcha"><g:message code="register.captcha.label"
+                                                                      default="Enter Security Code"/></label>
 
                 <div class="controls">
-                    <g:textField name="captcha" size="8" title="${message(code:'register.captcha.title', default:'')}" required=""/>
+                    <g:textField name="captcha" size="8" title="${message(code: 'register.captcha.title', default: '')}"
+                                 required=""/>
                     <img src="${createLink(controller: 'simpleCaptcha', action: 'captcha')}"/>
                 </div>
             </div>
