@@ -302,8 +302,22 @@ class CrmTenantController {
         }
 
         if (email) {
-            event(for: "crm", topic: "tenantShared", data: [id: id, email: email, role: role, message: msg, user: crmSecurityService.currentUser.username])
-            flash.success = message(code: 'crmTenant.share.success.message', args: [crmTenant.name, email, msg])
+            def currentUser = crmSecurityService.currentUser
+            if (email.trim().equalsIgnoreCase(currentUser?.email)) {
+                flash.error = message(code: "crmInvitation.invite.self.message", default: "You cannot invite yourself", args: [crmTenant.name, email])
+            } else {
+                def alreadyInvited = crmSecurityService.getTenantPermissions(id).find{it.user.email.equalsIgnoreCase(email)}
+                if (alreadyInvited) {
+                    flash.error = message(code: "crmInvitation.invite.user.message", default: "User [{1}] already have access to {0}", args: [crmTenant.name, email])
+                } else {
+                    if (crmInvitationService.getInvitationsTo(email, id)) {
+                        flash.error = message(code: "crmInvitation.invite.twice.message", default: "User [{0}] is already invited", args: [crmTenant.name, email])
+                    } else {
+                        event(for: "crm", topic: "tenantShared", data: [id: id, email: email, role: role, message: msg, user: crmSecurityService.currentUser.username])
+                        flash.success = message(code: 'crmTenant.share.success.message', args: [crmTenant.name, email, msg])
+                    }
+                }
+            }
         }
 
         if (params.referer) {
