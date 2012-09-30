@@ -394,19 +394,64 @@ class CrmSecurityService {
                 return false
             }
         }
+
         def user = CrmUser.findByUsernameAndEnabled(username, true, [cache: true])
         if (!user) {
             log.warn "SECURITY: User [${username}] is authenticated but not enabled!"
             return false
         }
-        if (user.accounts.find {it.id == tenantId}) {
-            return true // User own this tenant
+
+        def today = new java.sql.Date(new Date().clearTime().time)
+
+        // NOTE: The following logic is almost a copy/paste of getAllTenants()
+        // But for performance reasons we don't want to continue searching as
+        // soon as we have found a match. We search most likely match first.
+
+        // Owned tenant
+        if (CrmTenant.createCriteria().list() {
+            projections {
+                property('id')
+            }
+            eq('user', user)
+            or {
+                isNull('expires')
+                ge('expires', today)
+            }
+            cache true
+        }) {
+            return true
         }
-        if (user.permissions.find {it.tenantId == tenantId}) {
-            return true // User has individual permission for this tenant
+
+        // Role tenants
+        if (CrmUserRole.createCriteria().list() {
+            projections {
+                role {
+                    property('tenantId')
+                }
+            }
+            eq('user', user)
+            or {
+                isNull('expires')
+                ge('expires', today)
+            }
+            cache true
+        }) {
+            return true
         }
-        if (user.roles.find {it.role.tenantId == tenantId}) {
-            return true // User's role gives permission to the tenant.
+
+        // Permission tenants
+        if (CrmUserPermission.createCriteria().list() {
+            projections {
+                property('tenantId')
+            }
+            eq('user', user)
+            or {
+                isNull('expires')
+                ge('expires', today)
+            }
+            cache true
+        }) {
+            return true
         }
         return false
     }
@@ -554,21 +599,54 @@ class CrmSecurityService {
                 throw new IllegalArgumentException("not authenticated")
             }
         }
+        def today = new java.sql.Date(new Date().clearTime().time)
         def result = new HashSet<Long>()
         def user = CrmUser.findByUsernameAndEnabled(username, true, [cache: true])
         if (user) {
             // Owned tenants
-            def tmp = CrmTenant.findAllByUser(user)*.id
+            def tmp = CrmTenant.createCriteria().list() {
+                projections {
+                    property('id')
+                }
+                eq('user', user)
+                or {
+                    isNull('expires')
+                    ge('expires', today)
+                }
+                cache true
+            }
             if (tmp) {
                 result.addAll(tmp)
             }
             // Role tenants
-            tmp = CrmUserRole.findAllByUser(user).collect {it.role.tenantId}
+            tmp = CrmUserRole.createCriteria().list() {
+                projections {
+                    role {
+                        property('tenantId')
+                    }
+                }
+                eq('user', user)
+                or {
+                    isNull('expires')
+                    ge('expires', today)
+                }
+                cache true
+            }
             if (tmp) {
                 result.addAll(tmp)
             }
             // Permission tenants
-            tmp = CrmUserPermission.findAllByUser(user)*.tenantId
+            tmp = CrmUserPermission.createCriteria().list() {
+                projections {
+                    property('tenantId')
+                }
+                eq('user', user)
+                or {
+                    isNull('expires')
+                    ge('expires', today)
+                }
+                cache true
+            }
             if (tmp) {
                 result.addAll(tmp)
             }
@@ -685,7 +763,7 @@ class CrmSecurityService {
 
         def userrole = CrmUserRole.findByUserAndRole(user, role, [cache: true])
         if (!userrole) {
-            def expiryDate = expires != null ? new java.sql.Date(expires.time) : null
+            def expiryDate = expires != null ? new java.sql.Date(expires.clearTime().time) : null
             user.discard()
             user = CrmUser.lock(user.id)
             user.addToRoles(userrole = new CrmUserRole(role: role, expires: expiryDate))

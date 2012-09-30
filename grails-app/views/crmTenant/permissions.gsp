@@ -53,13 +53,15 @@
                 <g:each in="${permissions}" var="perm" status="i">
 
                     <g:set var="expires" value="${perm.expires ?: crmTenant.expires}"/>
-                    <g:set var="active" value="${expires == null || expires > new Date()}"/>
+                    <g:set var="active" value="${expires == null || expires >= new java.sql.Date(new Date().clearTime().time)}"/>
 
                     <g:if test="${perm instanceof CrmUserRole}">
                         <tr class="${active ? '' : 'muted'}">
-                            <td>${perm.user.name}</td>
-                            <td>${message(code: 'crmRole.role.' + perm.toString() + '.label', default: perm.toString())}</td>
+                            <td title="${perm.user.username?.encodeAsHTML()}">${perm.user.name?.encodeAsHTML()}</td>
                             <td title="${crm.permissionList(permission: perm.role.permissions, var: 'p', {p.label + ' '})}">
+                                ${message(code: 'crmRole.role.' + perm.toString() + '.label', default: perm.toString())}
+                            </td>
+                            <td>
                                 ${crmTenant.name.encodeAsHTML()}
                             </td>
                             <td>
@@ -92,7 +94,7 @@
 
                     <g:if test="${perm instanceof CrmUserPermission}">
                         <tr class="${active ? '' : 'muted'}">
-                            <td></td>
+                            <td title="${perm.user.username?.encodeAsHTML()}">${perm.user.name?.encodeAsHTML()}</td>
                             <td>
                                 <crm:permissionList permission="${perm.permissionsString}">
                                     ${it.label}<br/>
