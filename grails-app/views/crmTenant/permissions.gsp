@@ -7,6 +7,7 @@
     <title><g:message code="crmTenant.permissions.title" args="[entityName]"/></title>
     <r:script>
         $(document).ready(function () {
+            $('.date').datepicker({weekStart:1});
         });
     </r:script>
 </head>
@@ -16,89 +17,181 @@
 <crm:header title="crmTenant.permissions.title" subtitle="${crmTenant.name.encodeAsHTML()}"
             args="[entityName, crmTenant]"/>
 
-<table class="table table-bordered">
-    <thead>
-    <tr>
-        <th>Användare</th>
-        <th>Roll</th>
-        <th>Mål</th>
-        <th>Gäller t.o.m</th>
-        <th>Status</th>
-        <th></th>
-    </tr>
-    </thead>
-    <tbody>
-    <g:each in="${permissions}" var="perm">
-        <tr>
-            <td>${perm.user.name}</td>
-            <g:if test="${perm instanceof CrmUserRole}">
-                <td>${message(code: 'crmRole.role.' + perm.toString() + '.label', default: perm.toString())}</td>
-                <td title="${crm.permissionList(permission: perm.role.permissions, var:'p', {p.label + ' '})}">
-                    ${crmTenant.name.encodeAsHTML()}
-                </td>
-                <td><g:formatDate type="date" date="${perm.expires}" style="short"/></td>
-                <td>${perm.expires == null || perm.expires > new Date() ? 'Aktiv' : 'Inaktiv'}</td>
+<g:hasErrors bean="${errorBean}">
+    <crm:alert class="alert-error">
+        <ul>
+            <g:eachError bean="${errorBean}" var="error">
+                <li <g:if test="${error in org.springframework.validation.FieldError}">data-field-id="${error.field}"</g:if>><g:message
+                        error="${error}"/></li>
+            </g:eachError>
+        </ul>
+    </crm:alert>
+</g:hasErrors>
 
-                <td style="text-align: right;">
-                    <g:unless test="${perm.user == me}">
-                        <crm:button type="link" action="deleteRole" id="${perm.id}"
-                                    visual="danger" class="btn-mini" icon="icon-trash icon-white"
-                                    label="crmUserRole.button.delete.label"
-                                    confirm="crmUserRole.button.delete.confirm.message"
-                                    permission="security:delete"/>
-                    </g:unless>
-                </td>
-            </g:if>
-            <g:if test="${perm instanceof CrmUserPermission}">
-                <td></td>
-                <td>
-                    <crm:permissionList permission="${perm.permissionsString}">
-                        ${it.label}<br/>
-                    </crm:permissionList>
-                </td>
-                <td><g:formatDate type="date" date="${perm.expires}" style="short"/></td>
-                <td>Aktiv</td>
+<g:set var="saveButtonNeeded" value="${false}"/>
 
-                <td style="text-align: right;">
-                    <g:unless test="${perm.user == me}">
-                        <crm:button type="link" action="deletePermission" id="${perm.id}"
-                                    visual="danger" class="btn-mini" icon="icon-trash icon-white"
-                                    label="crmUserPermission.button.delete.label"
-                                    confirm="crmUserPermission.button.delete.confirm.message"
-                                    permission="security:delete"/>
-                    </g:unless>
-                </td>
-            </g:if>
-        </tr>
-    </g:each>
+<g:form action="permissions">
 
-    <g:each in="${invitations}" var="inv">
-        <tr>
-            <td>${inv.receiver?.encodeAsHTML()}</td>
-            <td>${message(code: 'crmRole.role.' + inv.param + '.label', default: inv.param)}</td>
-            <td>${inv.reference?.encodeAsHTML()}</td>
-            <td><g:formatDate format="yyyy-MM-dd" date="${inv.dateCreated + 30}"/></td>
-            <td>Inbjudan skickad</td>
-            <td style="text-align: right;"><crm:button type="link" action="deleteInvitation" id="${inv.id}"
-                            visual="danger" class="btn-mini" icon="icon-trash icon-white"
-                            label="crmInvitation.button.delete.label"
-                            confirm="crmInvitation.button.delete.confirm.message"
-                            args="${[inv.receiver]}"
-                            permission="crmInvitation:cancel"/></td>
-        </tr>
-    </g:each>
-    </tbody>
-</table>
+    <g:hiddenField name="id" value="${crmTenant.id}"/>
+    <g:hiddenField name="version" value="${crmTenant.version}"/>
 
-<crm:hasFeature feature="crmInvitation">
-    <div class="form-actions">
-        <crm:button type="url" visual="primary" icon="icon-share-alt icon-white" data-toggle="modal"
-                    href="#modal-share-account"
-                    label="crmTenant.button.share.label" permission="crmTenant:share"/>
+    <div class="row-fluid">
+        <div class="span9">
+
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th><g:message code="crmUser.label" default="User"/></th>
+                    <th><g:message code="crmRole.label" default="Role"/></th>
+                    <th>Mål</th>
+                    <th><g:message code="crmTenant.expires.label" default="Expires"/></th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <g:each in="${permissions}" var="perm" status="i">
+
+                    <g:set var="expires" value="${perm.expires ?: crmTenant.expires}"/>
+                    <g:set var="active" value="${expires == null || expires > new Date()}"/>
+
+                    <g:if test="${perm instanceof CrmUserRole}">
+                        <tr class="${active ? '' : 'muted'}">
+                            <td>${perm.user.name}</td>
+                            <td>${message(code: 'crmRole.role.' + perm.toString() + '.label', default: perm.toString())}</td>
+                            <td title="${crm.permissionList(permission: perm.role.permissions, var: 'p', {p.label + ' '})}">
+                                ${crmTenant.name.encodeAsHTML()}
+                            </td>
+                            <td>
+                                <g:if test="${perm.user == me}">
+                                    &nbsp;${formatDate(type: 'date', date: expires, style: 'short')}
+                                </g:if>
+                                <g:else>
+                                    <div class="input-append date"
+                                         data-date="${formatDate(format: 'yyyy-MM-dd', date: expires ?: new Date())}">
+                                        <g:textField name="role_expires_${perm.id}" class="input-small"
+                                                     value="${formatDate(type: 'date', date: expires, style: 'short')}"/><span
+                                            class="add-on"><i class="icon-th"></i></span>
+                                    </div>
+                                    <g:set var="saveButtonNeeded" value="${true}"/>
+                                </g:else>
+                            </td>
+                            <td>${active ? 'Aktiv' : 'Inaktiv'}</td>
+
+                            <td style="text-align: right;">
+                                <g:unless test="${perm.user == me}">
+                                    <crm:button type="link" action="deleteRole" id="${perm.id}"
+                                                visual="danger" class="btn-mini" icon="icon-trash icon-white"
+                                                label="crmUserRole.button.delete.label"
+                                                confirm="crmUserRole.button.delete.confirm.message"
+                                                permission="security:delete"/>
+                                </g:unless>
+                            </td>
+                        </tr>
+                    </g:if>
+
+                    <g:if test="${perm instanceof CrmUserPermission}">
+                        <tr class="${active ? '' : 'muted'}">
+                            <td></td>
+                            <td>
+                                <crm:permissionList permission="${perm.permissionsString}">
+                                    ${it.label}<br/>
+                                </crm:permissionList>
+                            </td>
+                            <td>
+                                <g:if test="${perm.user == me}">
+                                    &nbsp;${formatDate(type: 'date', date: expires, style: 'short')}
+                                </g:if>
+                                <g:else>
+                                    <div class="input-append date"
+                                         data-date="${formatDate(format: 'yyyy-MM-dd', date: expires ?: new Date())}">
+                                        <g:textField name="perm_expires_${perm.id}" class="input-small"
+                                                     value="${formatDate(type: 'date', date: expires, style: 'short')}"/><span
+                                            class="add-on"><i class="icon-th"></i></span>
+                                    </div>
+                                    <g:set var="saveButtonNeeded" value="${true}"/>
+                                </g:else>
+                            </td>
+                            <td>${active ? 'Aktiv' : 'Inaktiv'}</td>
+
+                            <td style="text-align: right;">
+                                <g:unless test="${perm.user == me}">
+                                    <crm:button type="link" action="deletePermission" id="${perm.id}"
+                                                visual="danger" class="btn-mini" icon="icon-trash icon-white"
+                                                label="crmUserPermission.button.delete.label"
+                                                confirm="crmUserPermission.button.delete.confirm.message"
+                                                permission="security:delete"/>
+                                </g:unless>
+                            </td>
+                        </tr>
+                    </g:if>
+
+                </g:each>
+
+                <g:each in="${invitations}" var="inv">
+                    <tr>
+                        <td>${inv.receiver?.encodeAsHTML()}</td>
+                        <td>${message(code: 'crmRole.role.' + inv.param + '.label', default: inv.param)}</td>
+                        <td>${inv.reference?.encodeAsHTML()}</td>
+                        <td><g:formatDate format="yyyy-MM-dd" date="${inv.dateCreated + 30}"/></td>
+                        <td>Inbjudan skickad</td>
+                        <td style="text-align: right;"><crm:button type="link" action="deleteInvitation" id="${inv.id}"
+                                                                   visual="danger" class="btn-mini"
+                                                                   icon="icon-trash icon-white"
+                                                                   label="crmInvitation.button.delete.label"
+                                                                   confirm="crmInvitation.button.delete.confirm.message"
+                                                                   args="${[inv.receiver]}"
+                                                                   permission="crmInvitation:cancel"/></td>
+                    </tr>
+                </g:each>
+                </tbody>
+            </table>
+
+        </div>
+
+        <div class="span3">
+            <table class="table table-bordered">
+                <thead>
+                <tr>
+                    <th>Totalt aktiva</th>
+                    <th>Antal</th>
+                    <th>Max</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr class="${adminUsage[0] >= (adminUsage[1] ?: Integer.MAX_VALUE) ? 'error' : ''}">
+                    <td>Administratörer</td><td>${adminUsage[0]}</td><td>${adminUsage[1] ? adminUsage[1] : ''}</td>
+                </tr>
+                <tr class="${userUsage[0] >= (userUsage[1] ?: Integer.MAX_VALUE) ? 'error' : ''}">
+                    <td>Normala användare</td><td>${userUsage[0]}</td><td>${userUsage[1] ? userUsage[1] : ''}</td>
+                </tr>
+                <tr class="${guestUsage[0] >= (guestUsage[1] ?: Integer.MAX_VALUE) ? 'error' : ''}">
+                    <td>Gästanvändare</td><td>${guestUsage[0]}</td><td>${guestUsage[1] ? guestUsage[1] : ''}</td>
+                </tr>
+                <crm:hasFeature feature="crmInvitation">
+                    <tr class="${invitations.size() >= 25 ? 'error' : ''}">
+                        <td>Inbjudningar</td><td>${invitations.size()}</td><td>${25}</td>
+                    </tr>
+                </crm:hasFeature>
+                </tbody>
+            </table>
+
+        </div>
     </div>
-</crm:hasFeature>
 
+    <div class="form-actions">
+        <crm:hasFeature feature="crmInvitation">
+            <g:if test="${saveButtonNeeded}">
+                <crm:button action="permissions" visual="success" icon="icon-ok icon-white"
+                            label="crmUserRole.button.update.label" permission="crmTenant:edit"/>
+            </g:if>
+            <crm:button type="url" visual="primary" icon="icon-share-alt icon-white" data-toggle="modal"
+                        href="#modal-share-account"
+                        label="crmTenant.button.share.label" permission="crmTenant:share"/>
+        </crm:hasFeature>
+    </div>
 
+</g:form>
 
 <div id="modal-share-account" class="modal hide">
     <div class="modal-header">

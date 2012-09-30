@@ -234,10 +234,43 @@ class CrmTenantController {
             redirect action: 'index'
             return
         }
+        def error = null
+        switch (request.method) {
+            case "GET":
+                break
+            case "POST":
+                params.findAll {it.key.startsWith('role_expires_')}.each {key, value ->
+                    def role = CrmUserRole.get(key.substring(13))
+                    if (role) {
+                        bindData(role, [expires: value])
+                        if (role.hasErrors() || !role.save()) {
+                            error = role
+                        }
+                    }
+                }
+                params.findAll {it.key.startsWith('perm_expires_')}.each {key, value ->
+                    def perm = CrmUserPermission.get(key.substring(13))
+                    if (perm) {
+                        bindData(perm, [expires: value])
+                        if (perm.hasErrors() || !perm.save()) {
+                            error = perm
+                        }
+                    }
+                }
+                if (!error) {
+                    flash.success = message(code: 'crmUserRole.updated.message', default: 'Permissions updated')
+                }
+                break
+        }
+
         def invitations = crmInvitationService ? crmInvitationService.getInvitationsFor(crmTenant, crmTenant.id) : []
         def currentUser = crmSecurityService.getUser()
+        def guestUsage = crmSecurityService.getRoleUsage('guest', id)
+        def userUsage = crmSecurityService.getRoleUsage('user', id)
+        def adminUsage = crmSecurityService.getRoleUsage('admin', id)
+
         return [me: currentUser, crmTenant: crmTenant, permissions: crmSecurityService.getTenantPermissions(crmTenant.id),
-                invitations: invitations]
+                invitations: invitations, guestUsage: guestUsage, userUsage: userUsage, adminUsage: adminUsage, errorBean: error]
     }
 
     def deleteRole(Long id) {
@@ -306,7 +339,7 @@ class CrmTenantController {
             if (email.trim().equalsIgnoreCase(currentUser?.email)) {
                 flash.error = message(code: "crmInvitation.invite.self.message", default: "You cannot invite yourself", args: [crmTenant.name, email])
             } else {
-                def alreadyInvited = crmSecurityService.getTenantPermissions(id).find{it.user.email.equalsIgnoreCase(email)}
+                def alreadyInvited = crmSecurityService.getTenantPermissions(id).find {it.user.email.equalsIgnoreCase(email)}
                 if (alreadyInvited) {
                     flash.error = message(code: "crmInvitation.invite.user.message", default: "User [{1}] already have access to {0}", args: [crmTenant.name, email])
                 } else {

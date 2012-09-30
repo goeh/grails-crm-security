@@ -17,6 +17,8 @@
 package grails.plugins.crm.security
 
 import grails.events.Listener
+import grails.plugins.crm.core.CrmException
+import grails.plugins.crm.core.DateUtils
 import grails.plugins.crm.core.TenantUtils
 import org.codehaus.groovy.grails.web.mapping.LinkGenerator
 
@@ -27,6 +29,7 @@ class CrmTenantSharingService {
 
     def crmSecurityService
     def crmInvitationService
+    def grailsApplication
 
     LinkGenerator grailsLinkGenerator
 
@@ -66,7 +69,15 @@ class CrmTenantSharingService {
             if (tenant && role) {
                 crmSecurityService.runAs(invitation.sender) {
                     TenantUtils.withTenant(tenant) {
-                        crmSecurityService.addUserRole(invitedUser.username, role, null/*DateUtils.endOfWeek(30)*/)
+                        def expires = grailsApplication.config.crm.invitation.expires ?: null
+                        try {
+                            crmSecurityService.addUserRole(invitedUser.username, role,
+                                    expires ? DateUtils.endOfWeek(expires) : null)
+                        } catch (CrmException e) {
+
+                        } catch (Exception e) {
+
+                        }
                         if (!invitedUser.defaultTenant) {
                             invitedUser.discard()
                             invitedUser = CrmUser.lock(invitedUser.id)

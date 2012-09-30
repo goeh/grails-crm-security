@@ -206,13 +206,25 @@ class CrmSecurityService {
         // Create new tenant.
         def tenant = new CrmTenant(user: user, name: tenantName, parent: parent, locale: params.remove('locale')?.toString())
 
+        def expires = params.remove('expires')
+        if (expires) {
+            if (!(expires instanceof Date)) {
+                expires = DateUtils.parseSqlDate(expires.toString())
+            }
+            tenant.expires = expires
+        }
+
+        tenant.maxGuests = grailsApplication.config.crm.tenant.max.guests ?: 0
+        tenant.maxUsers = grailsApplication.config.crm.tenant.max.users ?: 0
+        tenant.maxAdmins = grailsApplication.config.crm.tenant.max.admins ?: 1
+
         params.each {key, value ->
             tenant.setOption(key, value)
         }
 
         tenant.save(failOnError: true, flush: true)
 
-        addRole(user, 'admin', tenant.id)
+        addSystemRole(user, 'admin', tenant.id)
 
         if (initializer != null) {
             initializer.call(tenant.id)
@@ -234,14 +246,6 @@ class CrmSecurityService {
         for (feature in crmFeatureService.getApplicationFeatures().findAll {it.enabled}) {
             crmFeatureService.enableFeature(feature.name, tenant)
         }
-    }
-
-    private void addRole(CrmUser user, String roleName, Long tenant = TenantUtils.tenant) {
-        def role = CrmRole.findByNameAndTenantId(roleName, tenant, [cache: true])
-        if (!role) {
-            role = new CrmRole(name: roleName, param: roleName, tenantId: tenant).save(failOnError: true, flush: true)
-        }
-        new CrmUserRole(user: user, role: role).save(failOnError: true, flush: true)
     }
 
     @Listener(namespace = "*", topic = "enableFeature")
@@ -661,8 +665,10 @@ class CrmSecurityService {
         CrmRole.findByNameAndTenantId(rolename, tenant, [cache: true]) != null
     }
 
-    CrmUserRole addUserRole(String username, String rolename, Date expires = null) {
-        def tenant = TenantUtils.getTenant()
+    CrmUserRole addUserRole(String username, String rolename, Date expires = null, Long tenant = null) {
+        if (!tenant) {
+            tenant = TenantUtils.getTenant()
+        }
         def user = CrmUser.findByUsernameAndEnabled(username, true, [cache: true])
         if (!user) {
             throw new IllegalArgumentException("Can't add role [$rolename] in tenant [$tenant] to user [$username] because user is not found")
@@ -671,6 +677,12 @@ class CrmSecurityService {
         if (!role) {
             role = new CrmRole(tenantId: tenant, name: rolename, param: rolename).save(failOnError: true, flush: true)
         }
+
+        def (count, max) = getRoleUsage(rolename, tenant)
+        if (max != null && count >= max) {
+            throw new CrmException(rolename + '.role.max.exceeded', ['Tenant', count, max])
+        }
+
         def userrole = CrmUserRole.findByUserAndRole(user, role, [cache: true])
         if (!userrole) {
             def expiryDate = expires != null ? new java.sql.Date(expires.time) : null
@@ -680,6 +692,32 @@ class CrmSecurityService {
             user.save(flush: true)
         }
         return userrole
+    }
+
+    private void addSystemRole(CrmUser user, String roleName, Long tenantId) {
+        def role = CrmRole.findByNameAndTenantId(roleName, tenantId, [cache: true])
+        if (!role) {
+            role = new CrmRole(name: roleName, param: roleName, tenantId: tenantId).save(failOnError: true, flush: true)
+        }
+        new CrmUserRole(user: user, role: role).save(failOnError: true, flush: true)
+    }
+
+    List<Integer> getRoleUsage(String roleName, Long tenantId = null) {
+        if (!tenantId) {
+            tenantId = TenantUtils.tenant
+        }
+        def role = CrmRole.findByNameAndTenantId(roleName, tenantId, [cache: true])
+        if (!role) {
+            throw new CrmException('crmRole.not.found.message', ['Role', roleName, tenantId])
+        }
+        def tenant = CrmTenant.get(role.tenantId)
+        def count = CrmUserRole.countByRole(role)
+        def maxProperty = getMaxProperty(role.name)
+        return [count, maxProperty ? tenant[maxProperty] : null]
+    }
+
+    private String getMaxProperty(String roleName) {
+        [guest: 'maxGuests', user: 'maxUsers', admin: 'maxAdmins'].get(roleName)
     }
 
     void addPermissionToRole(String permission, String rolename, Long tenant = TenantUtils.getTenant()) {

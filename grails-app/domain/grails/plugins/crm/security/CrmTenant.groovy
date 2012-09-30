@@ -33,13 +33,19 @@ class CrmTenant {
     String locale
     String name
     CrmTenant parent
+    Integer maxGuests
+    Integer maxUsers
+    Integer maxAdmins
     static belongsTo = [user: CrmUser]
     static hasMany = [options: CrmTenantOption]
     static constraints = {
-        locale(maxSize:5, nullable:true, blank:false)
-        expires(nullable:true)
-        name(size: 3..80, maxSize: 80, nullable: false, blank: false, unique:'user')
-        parent(nullable:true)
+        locale(maxSize: 5, nullable: true, blank: false)
+        expires(nullable: true)
+        name(size: 3..80, maxSize: 80, nullable: false, blank: false, unique: 'user')
+        parent(nullable: true)
+        maxGuests(nullable: true)
+        maxUsers(nullable: true)
+        maxAdmins(nullable: true)
     }
     static mapping = {
         table 'crm_tenant'
@@ -67,9 +73,10 @@ class CrmTenant {
      * @return a data access object (Map) representing the domain instance.
      */
     Map<String, Object> getDao() {
-        [id: id, name: name, parent: parent?.id, locale: locale ? new Locale(*locale.split('_')) : Locale.getDefault(),
-                user: [id:user.id, username: user.username, name: user.name, email: user.email],
-                options: getOptionsMap(), dateCreated: dateCreated, expires:expires]
+        [id: id, name: name, parent: parent?.id, locale: locale ? new Locale(* locale.split('_')) : Locale.getDefault(),
+                user: [id: user.id, username: user.username, name: user.name, email: user.email],
+                options: getOptionsMap(), dateCreated: dateCreated, expires: expires,
+                maxGuests: maxGuests, maxUsers: maxUsers, maxAdmins: maxAdmins]
     }
 
     /**
@@ -78,18 +85,18 @@ class CrmTenant {
      * @return options
      */
     private Map<String, Object> getOptionsMap() {
-        options.inject([:]) {map, o->
+        options.inject([:]) {map, o ->
             map[o.key] = o.value
             map
         }
     }
 
     void setOption(String key, Object value) {
-        if(value == null) {
+        if (value == null) {
             removeOption(key)
         } else {
-            def o = options.find{it.key == key}
-            if(o) {
+            def o = options.find {it.key == key}
+            if (o) {
                 o.value = value
             } else {
                 o = new CrmTenantOption(key, value)
@@ -99,12 +106,12 @@ class CrmTenant {
     }
 
     def getOption(String key) {
-        options.find{it.key == key}?.value
+        options.find {it.key == key}?.value
     }
 
     boolean removeOption(String key) {
-        def o = options.find{it.key == key}
-        if(o) {
+        def o = options.find {it.key == key}
+        if (o) {
             removeFromOptions(o)
             return true
         }

@@ -30,7 +30,13 @@ class CrmUserRole {
     java.sql.Date expires
     static belongsTo = [user: CrmUser]
     static constraints = {
-        role()
+        role(validator: {val, obj->
+            def tenantExpires = CrmTenant.withNewSession { CrmTenant.get(obj.role?.tenantId)?.expires }
+            if (obj.expires && tenantExpires && obj.expires > tenantExpires) {
+                return ['expires.after.tenant', obj.expires, tenantExpires]
+            }
+            return null
+        })
         expires(nullable:true)
     }
     static mapping = {
