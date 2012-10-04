@@ -21,7 +21,7 @@
             <li><a href="#misc" data-toggle="tab"><g:message code="crmSettings.tab.misc.label"/><crm:countIndicator
                     count="${user.roles.size()}"/></a></li>
             <crm:pluginViews location="tabs" var="view">
-                <li><a href="#${view.id}" data-toggle="tab">${view.label.encodeAsHTML()}</a></li>
+                <crm:pluginTab id="${view.id}" label="${view.label}" count="${view.model?.totalCount}"/>
             </crm:pluginViews>
         </ul>
 
@@ -142,6 +142,13 @@
                 </table>
 
             </div>
+
+            <crm:pluginViews location="tabs" var="view">
+                <div class="tab-pane tab-${view.id}" id="${view.id}">
+                    <g:render template="${view.template}" model="${view.model}" plugin="${view.plugin}"/>
+                </div>
+            </crm:pluginViews>
+
         </div>
     </div>
 

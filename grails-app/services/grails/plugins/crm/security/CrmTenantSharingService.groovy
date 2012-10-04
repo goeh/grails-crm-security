@@ -74,9 +74,9 @@ class CrmTenantSharingService {
                             crmSecurityService.addUserRole(invitedUser.username, role,
                                     expires ? DateUtils.endOfWeek(expires) : null)
                         } catch (CrmException e) {
-
+                            log.error("Invitation failed for [${invitedUser.username}]", e)
                         } catch (Exception e) {
-
+                            log.error("Invitation failed for [${invitedUser.username}]", e)
                         }
                         if (!invitedUser.defaultTenant) {
                             invitedUser.discard()

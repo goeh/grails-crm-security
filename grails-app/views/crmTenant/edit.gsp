@@ -162,7 +162,7 @@
 <div id="features" class="tab-pane">
 
     <div class="row-fluid">
-        <div class="span6">
+        <div class="span5">
 
             <g:set var="installedFeatures" value="${features.findAll {!it.hidden}}"/>
 
@@ -197,7 +197,7 @@
             </g:else>
         </div>
 
-        <div class="span6">
+        <div class="span5">
 
             <h2>Ej installerade funktioner</h2>
 
@@ -248,6 +248,15 @@
             </g:if>
 
         </div>
+
+        <div class="span2">
+            <crm:pluginViews location="sidebar" var="view">
+                <div id="${view.id}" class="row-fluid">
+                    <g:render template="${view.template}" model="${view.model}" plugin="${view.plugin}"/>
+                </div>
+            </crm:pluginViews>
+        </div>
+
     </div>
 
 </div>
