@@ -786,7 +786,8 @@ class CrmSecurityService {
         }
         def role = CrmRole.findByNameAndTenantId(roleName, tenantId, [cache: true])
         if (!role) {
-            throw new CrmException('crmRole.not.found.message', ['Role', roleName, tenantId])
+            log.warn("Role [$roleName] not found in tenant [$tenantId]")
+            return [0, 0]
         }
         def tenant = CrmTenant.get(role.tenantId)
         def count = CrmUserRole.countByRole(role)

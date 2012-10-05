@@ -53,7 +53,8 @@
                 <g:each in="${permissions}" var="perm" status="i">
 
                     <g:set var="expires" value="${perm.expires ?: crmTenant.expires}"/>
-                    <g:set var="active" value="${expires == null || expires >= new java.sql.Date(new Date().clearTime().time)}"/>
+                    <g:set var="active"
+                           value="${expires == null || expires >= new java.sql.Date(new Date().clearTime().time)}"/>
 
                     <g:if test="${perm instanceof CrmUserRole}">
                         <tr class="${active ? '' : 'muted'}">
@@ -100,6 +101,7 @@
                                     ${it.label}<br/>
                                 </crm:permissionList>
                             </td>
+                            <td></td>
                             <td>
                                 <g:if test="${perm.user == me}">
                                     &nbsp;${formatDate(type: 'date', date: expires, style: 'short')}
