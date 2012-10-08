@@ -17,7 +17,7 @@
 
 <body>
 
-<crm:header title="crmTenant.edit.title" subtitle="${crmTenant.name.encodeAsHTML()}"
+<crm:header title="crmTenant.edit.title" subtitle="${crmTenant.user.username.encodeAsHTML()}"
             args="[entityName, crmTenant]"/>
 
 <div class="tabbable">
@@ -148,12 +148,18 @@
 
         <div class="form-actions">
             <crm:button visual="primary" icon="icon-ok icon-white" label="crmTenant.button.update.label"
-                        permission="crmTenant:update"/>
-            <crm:button action="delete" visual="danger" icon="icon-trash icon-white"
-                        label="crmTenant.button.delete.label" permission="crmTenant:delete"
-                        confirm="crmTenant.button.delete.confirm.message"/>
+                        permission="crmTenant:edit:${crmTenant.id}"/>
+            <crm:button action="reset" visual="danger" icon="icon-repeat icon-white"
+                        label="crmTenant.button.reset.label" permission="crmTenant:reset:${crmTenant.id}"
+                        confirm="crmTenant.button.reset.confirm.message"/>
             <crm:button type="link" icon="icon-remove" label="crmTenant.button.cancel.label"
                         action="index"/>
+            <crm:hasPermission permission="crmTenant:delete:${crmTenant.id}">
+                <g:link action="delete" id="${crmTenant.id}" class="text-error" style="margin-left: 10px;"
+                        onclick="return confirm('${message(code: 'crmTenant.button.delete.confirm.message', default: 'Are you sure?')}')">
+                    <g:message code="crmTenant.button.delete.label" default="Delete"/>
+                </g:link>
+            </crm:hasPermission>
         </div>
 
     </g:form>

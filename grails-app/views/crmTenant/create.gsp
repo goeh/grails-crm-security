@@ -46,7 +46,7 @@
 
                         <div class="controls">
                             <label class="checkbox">
-                                <g:checkBox name="defaultTenant" value="${!crmUser.defaultTenant}"/>
+                                <g:checkBox name="defaultTenant" value="true" checked="${!crmUser.defaultTenant}"/>
                                 <g:message code="crmUser.defaultTenant.help"/>
                             </label>
                         </div>

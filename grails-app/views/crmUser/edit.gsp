@@ -8,7 +8,7 @@
 
 <body>
 
-<crm:header title="crmUser.edit.title" subtitle="${crmUser.name}" args="[entityName, crmUser]"/>
+<crm:header title="crmUser.edit.title" subtitle="${crmUser.username}" args="[entityName, crmUser.name]"/>
 
 <g:hasErrors bean="${crmUser}">
     <crm:alert class="alert-error">
@@ -22,7 +22,6 @@
 </g:hasErrors>
 
 <g:form action="edit">
-
     <f:with bean="crmUser">
 
         <g:hiddenField name="id" value="${crmUser?.id}"/>
@@ -69,10 +68,15 @@
 
         <div class="form-actions">
             <crm:button visual="primary" icon="icon-ok icon-white" label="crmUser.button.update.label"/>
+            <g:unless test="${crmUser.accounts}">
+                <crm:button action="delete" visual="danger" icon="icon-trash icon-white"
+                            label="crmUser.button.delete.label"
+                            confirm="crmUser.button.delete.confirm.message"
+                            permission="crmUser:delete"/>
+            </g:unless>
         </div>
 
     </f:with>
-
 </g:form>
 
 </body>

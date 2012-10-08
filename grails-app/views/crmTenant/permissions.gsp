@@ -87,7 +87,7 @@
                                                 visual="danger" class="btn-mini" icon="icon-trash icon-white"
                                                 label="crmUserRole.button.delete.label"
                                                 confirm="crmUserRole.button.delete.confirm.message"
-                                                permission="security:delete"/>
+                                                permission="crmTenant:edit:${perm.role.tenantId}"/>
                                 </g:unless>
                             </td>
                         </tr>
@@ -124,7 +124,7 @@
                                                 visual="danger" class="btn-mini" icon="icon-trash icon-white"
                                                 label="crmUserPermission.button.delete.label"
                                                 confirm="crmUserPermission.button.delete.confirm.message"
-                                                permission="security:delete"/>
+                                                permission="crmTenant:edit:${perm.tenantId}"/>
                                 </g:unless>
                             </td>
                         </tr>

@@ -132,8 +132,9 @@
                             <dd>${tenant.features?.join(', ')}</dd>
                             <g:if test="${tenant.user.id != crmUser.id}">
                                 <dt>Ägare</dt>
-                                <dd><g:link action="show"
-                                            id="${tenant.user.id}">${tenant.user.name.encodeAsHTML()} (${tenant.user.username})</g:link>
+                                <dd><g:link action="show" id="${tenant.user.id}">
+                                    ${tenant.user.name.encodeAsHTML()} (${tenant.user.username})
+                                </g:link>
                                 </dd>
                             </g:if>
                             <g:if test="${tenant.parent}">
@@ -143,8 +144,12 @@
                             <dt>Skapad</dt>
                             <dd><g:formatDate date="${tenant.dateCreated}" type="date"/></dd>
                             <dt>Löper ut</dt>
-                            <dd><g:if test="${tenant.expires}"><g:formatDate date="${tenant.expires}"
-                                                                             type="date"/></g:if><g:else>Aldrig</g:else></dd>
+                            <dd>
+                                <g:if test="${tenant.expires}">
+                                    <g:formatDate date="${tenant.expires}" type="date"/>
+                                </g:if>
+                                <g:else>Aldrig</g:else>
+                            </dd>
                         </dl>
                     </div>
 
@@ -201,13 +206,9 @@
                 </div>
 
                 <div class="form-actions">
-                    <g:form>
-                        <input type="hidden" name="id" value="${crmUser.id}"/>
-                        <input type="hidden" name="tenantId" value="${tenant.id}"/>
-                        <crm:button action="reset" visual="danger" label="crmUser.permission.reset.label"
-                                    icon="icon-refresh icon-white"
-                                    confirm="crmUser.permission.reset.confirm"/>
-                    </g:form>
+                    <crm:button type="link" controller="crmTenantAdmin" action="edit" id="${tenant.id}"
+                                visual="primary" label="crmTenant.edit.label" icon="icon-pencil icon-white"
+                                permission="crmTenant:edit:${tenant.id}"/>
                 </div>
             </div>
         </g:each>

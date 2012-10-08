@@ -163,6 +163,10 @@ class CrmSecurityService {
         if (!user) {
             throw new IllegalArgumentException("[$username] is not a valid user")
         }
+        if (user.accounts) {
+            throw new IllegalArgumentException("A user [${user.username}] with active accounts ${user.accounts} cannot be deleted")
+        }
+
         def userInfo = user.dao
         user.delete(flush: true)
         crmSecurityDelegate.deleteUser(username)
@@ -284,15 +288,25 @@ class CrmSecurityService {
 
             def alias = "${feature}.$roleName".toString()
             addPermissionAlias(alias, permissions)
-            if (!role.permissions?.contains(alias)) {
-                role.addToPermissions(alias)
-                log.debug("Permission [$alias] added to tenant [$tenant]")
-            }
+            addPermissionIfMissing(role, alias)
             if (roleName == 'admin') {
-                role.addToPermissions("crmFeature:*:$tenant".toString())
+                addPermissionIfMissing(role, "crmTenant:*:$tenant".toString())
+                addPermissionIfMissing(role, "crmFeature:*:$tenant".toString())
+            } else {
+                // user and guest
+                addPermissionIfMissing(role, "crmTenant:activate:$tenant".toString())
             }
             role.save(failOnError: true, flush: true)
         }
+    }
+
+    private boolean addPermissionIfMissing(def target, String permission) {
+        if (!target.permissions?.contains(permission)) {
+            target.addToPermissions(permission)
+            log.debug("Permission [$permission] added to tenant [${target.tenantId}]")
+            return true
+        }
+        return false
     }
 
     /**
@@ -538,7 +552,7 @@ class CrmSecurityService {
 
         currentUser.save(flush: true)
 
-        // Use Spring Events plugin to broadcast that the tenant was deleted.
+        // Use platform-core events to broadcast that the tenant was deleted.
         // Receivers should remove any data associated with the tenant.
         event(for: "crm", topic: "tenantDeleted", data: tenantInfo)
 
@@ -888,6 +902,26 @@ class CrmSecurityService {
             role.addToPermissions(perm)
         }
         role.save(failOnError: true, flush: true)
+    }
+
+    void resetPermissions(Long tenantId = null) {
+        if (tenantId == null) {
+            tenantId = TenantUtils.getTenant()
+        }
+        def crmTenant = CrmTenant.get(tenantId)
+        if (!crmTenant) {
+            throw new CrmException('tenant.not.found.message', ['Tenant', tenantId])
+        }
+
+        for (feature in crmFeatureService.getFeatures(tenantId)) {
+            def securityConfig = grailsApplication.config.crm.security
+            def permissions = securityConfig[feature]?.permission ?: feature.permissions
+            if (permissions) {
+                setupFeaturePermissions(feature.name, permissions, tenantId)
+            }
+        }
+
+        event(for: "crm", topic: "resetPermissions", data: [tenant: tenantId])
     }
 
 }

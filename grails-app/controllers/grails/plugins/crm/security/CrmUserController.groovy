@@ -64,7 +64,7 @@ class CrmUserController {
             return
         }
         def tenants = crmSecurityService.getTenants(crmUser.username)
-        [crmUser: crmUser, tenantList:tenants]
+        [crmUser: crmUser, tenantList: tenants]
     }
 
     def edit() {
@@ -74,10 +74,11 @@ class CrmUserController {
             redirect action: 'index'
             return
         }
+        def tenants = crmSecurityService.getTenants(crmUser.username)
 
         switch (request.method) {
             case 'GET':
-                return [crmUser: crmUser]
+                return [crmUser: crmUser, tenantList: tenants]
             case 'POST':
                 if (params.version && crmUser.version) {
                     def version = params.version.toLong()
@@ -85,7 +86,7 @@ class CrmUserController {
                         crmUser.errors.rejectValue('version', 'crmUser.optimistic.locking.failure',
                                 [message(code: 'crmUser.label', default: 'User')] as Object[],
                                 "Another user has updated this user while you were editing")
-                        render view: 'edit', model: [crmUser: crmUser]
+                        render view: 'edit', model: [crmUser: crmUser, tenantList: tenants]
                         return
                     }
                 }
@@ -93,7 +94,7 @@ class CrmUserController {
                 bindData(crmUser, params, [include: CrmUser.BIND_WHITELIST])
 
                 if (!crmUser.save(flush: true)) {
-                    render view: 'edit', model: [crmUser: crmUser]
+                    render view: 'edit', model: [crmUser: crmUser, tenantList: tenants]
                     return
                 }
 
@@ -111,31 +112,23 @@ class CrmUserController {
             return
         }
 
-        try {
-            def tombstone = crmUser.toString()
-            crmUser.delete(flush: true)
-            flash.warning = message(code: 'crmUser.deleted.message', args: [message(code: 'crmUser.label', default: 'User'), tombstone])
-            redirect action: 'index'
-        }
-        catch (DataIntegrityViolationException e) {
-            flash.error = message(code: 'crmUser.not.deleted.message', args: [message(code: 'crmUser.label', default: 'User'), params.id])
-            redirect action: 'show', id: params.id
-        }
-    }
-
-    def reset(Long id, Long tenantId) {
-        def crmUser = CrmUser.get(id)
-        if (!crmUser) {
-            flash.error = message(code: 'crmUser.not.found.message', args: [message(code: 'crmUser.label', default: 'User'), id])
-            redirect action: 'index'
+        if (crmUser.accounts) {
+            flash.error = message(code: 'crmUser.delete.accounts.message', args: [message(code: 'crmUser.label', default: 'User'), crmUser.toString()])
+            redirect action: 'edit', id: crmUser.id
             return
         }
 
-        event(for:"crm", topic:"resetPermissions", data: [tenant:tenantId, username:crmUser.username])
-
-        flash.warning = message(code: 'crmUser.permission.reset.message', default:"Permissions reset for user [{0}]", args:[crmUser.toString()])
-
-        redirect action: 'show', id: id, fragment: 't' + tenantId
+        def tombstone = crmUser.toString()
+        try {
+            if (crmSecurityService.deleteUser(crmUser.username)) {
+                flash.warning = message(code: 'crmUser.deleted.message', args: [message(code: 'crmUser.label', default: 'User'), tombstone])
+                redirect action: 'index'
+                return
+            }
+        } catch (DataIntegrityViolationException e) {
+            log.error("Failed to delete user [${crmUser.username}]", e)
+        }
+        flash.error = message(code: 'crmUser.not.deleted.message', args: [message(code: 'crmUser.label', default: 'User'), tombstone])
+        redirect action: 'show', id: params.id
     }
-
 }

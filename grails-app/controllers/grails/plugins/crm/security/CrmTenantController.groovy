@@ -59,12 +59,7 @@ class CrmTenantController {
 
     def activate(Long id) {
         if (crmSecurityService.isValidTenant(id)) {
-            def oldTenant = TenantUtils.getTenant()
-            if (id != oldTenant) {
-                TenantUtils.setTenant(id)
-                request.session.tenant = id
-                event(for: "crm", topic: "tenantChanged", data: [newTenant: id, oldTenant: oldTenant, request: request])
-            }
+            switchTenant(id)
             if (params.referer) {
                 redirect(uri: params.referer - request.contextPath)
             } else {
@@ -73,6 +68,17 @@ class CrmTenantController {
         } else {
             response.sendError(HttpServletResponse.SC_FORBIDDEN)
         }
+    }
+
+    private boolean switchTenant(Long id) {
+        def oldTenant = TenantUtils.getTenant()
+        if (id != oldTenant) {
+            TenantUtils.setTenant(id)
+            request.session.tenant = id
+            event(for: "crm", topic: "tenantChanged", data: [newTenant: id, oldTenant: oldTenant, request: request])
+            return true
+        }
+        return false
     }
 
     def create() {
@@ -99,14 +105,13 @@ class CrmTenantController {
                         }
                         def tenant = crmSecurityService.createTenant(crmTenant.name, options)
                         def id = tenant.id
-                        if (!TenantUtils.tenant) {
-                            // No active tenant, set the newly created tenant as active.
-                            TenantUtils.setTenant(id)
-                            request.session.tenant = id
-                        }
+
                         if (params.boolean('defaultTenant')) {
-                            crmSecurityService.updateUser(crmUser.username, [defaultTenant: id])
+                            crmUser.refresh()
+                            crmUser.defaultTenant = id
+                            crmUser.save(flush: true)
                         }
+
                         def features = params.list('features')
                         for (f in features) {
                             def appFeature = crmFeatureService.getApplicationFeature(f)
@@ -119,6 +124,10 @@ class CrmTenantController {
                         }
                         flash.success = message(code: 'crmTenant.created.message', args: [message(code: 'crmTenant.label', default: 'Account'),
                                 tenant.name, installedFeatures.join(', ')])
+
+                        // Always activate the new tenant when created from user interface.
+                        switchTenant(id)
+
                         redirect(action: "index")
                         return
                     } catch (Exception e) {
@@ -234,6 +243,12 @@ class CrmTenantController {
             redirect action: 'index'
             return
         }
+
+        if (!crmSecurityService.isPermitted('crmTenant:edit:' + id)) {
+            redirect action: 'index'
+            return
+        }
+
         def error = null
         switch (request.method) {
             case "GET":
@@ -271,6 +286,24 @@ class CrmTenantController {
 
         return [me: currentUser, crmTenant: crmTenant, permissions: crmSecurityService.getTenantPermissions(crmTenant.id),
                 invitations: invitations, guestUsage: guestUsage, userUsage: userUsage, adminUsage: adminUsage, errorBean: error]
+    }
+
+    def reset(Long id) {
+        def crmTenant = CrmTenant.get(id)
+        if (!crmTenant) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND)
+            return
+        }
+
+        if (!checkPermission(crmTenant)) {
+            flash.error = message(code: 'crmTenant.permission.denied', args: [message(code: 'crmTenant.label', default: 'Account'), id])
+            redirect action: 'index'
+            return
+        }
+
+        crmSecurityService.resetPermissions(id)
+        flash.warning = message(code: 'crmTenant.permissions.reset.message', default: "Permission reset")
+        redirect action: 'edit', id: id
     }
 
     def deleteRole(Long id) {
@@ -331,6 +364,12 @@ class CrmTenantController {
         def crmTenant = CrmTenant.get(id)
         if (!crmTenant) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND)
+            return
+        }
+
+        if (!checkPermission(crmTenant)) {
+            flash.error = message(code: 'crmTenant.permission.denied', args: [message(code: 'crmTenant.label', default: 'Account'), id])
+            redirect action: 'index'
             return
         }
 
