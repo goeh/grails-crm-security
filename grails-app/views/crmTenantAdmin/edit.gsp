@@ -248,14 +248,12 @@
     <div class="row-fluid">
         <div class="span5">
 
-            <g:set var="installedFeatures" value="${features.findAll {!it.hidden}}"/>
-
             <h2>Installerade funktioner</h2>
 
-            <g:if test="${installedFeatures}">
-                <g:each in="${installedFeatures}" var="f">
+            <g:if test="${features}">
+                <g:each in="${features}" var="f">
                     <div class="well well-small clearfix ${f.enabled ? 'enabled' : 'disabled'}">
-                        <h3>
+                        <h3 class="${f.hidden ? 'muted' : ''}">
                             ${message(code: 'feature.' + f.name + '.label', default: f.name)}
                             <span class="statistics" data-crm-feature="${f.name}"></span>
                         </h3>
@@ -310,7 +308,7 @@
             <g:else>
                 <p>Alla tillgängliga funktioner är installerade.</p>
             </g:else>
-            <g:if test="${installedFeatures}">
+            <g:if test="${features}">
                 <div class="alert alert-info">
                     <p><span
                             class="badge badge-success">543</span> Grön etikett betyder att funktionen används regelbundet.

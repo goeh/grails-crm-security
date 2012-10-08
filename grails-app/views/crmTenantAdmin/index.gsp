@@ -10,27 +10,32 @@
 <div class="row-fluid">
 
     <div class="span9">
-        <table class="table table-striped">
+
+        <h1>User Account Statistics</h1>
+
+        <table class="table table-bordered">
             <thead>
             <tr>
-                <th colspan="2"><g:message code="crmNamedPermission.name.label" default="Named Permissions"/></th>
+                <th>Counter</th>
+                <th>Active</th>
+                <th>Total</th>
             </tr>
             </thead>
+
             <tbody>
-            <g:each in="${namedPermissions}" var="np">
-                <tr>
-                    <td>
-                        <g:link action="edit" id="${np.id}">
-                            ${fieldValue(bean: np, field: "name")}
-                        </g:link>
-                    </td>
-                    <td>
-                        ${np.permissions?.join(', ')}
-                    </td>
-                </tr>
-            </g:each>
+            <tr>
+                <td>Users</td>
+                <td>${user.active}</td>
+                <td>${user.total}</td>
+            </tr>
+            <tr>
+                <td>Tenants</td>
+                <td>${tenant.active}</td>
+                <td>${tenant.total}</td>
+            </tr>
             </tbody>
         </table>
+
     </div>
 
     <div class="span3">

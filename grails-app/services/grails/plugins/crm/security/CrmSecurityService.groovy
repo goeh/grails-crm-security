@@ -292,9 +292,6 @@ class CrmSecurityService {
             if (roleName == 'admin') {
                 addPermissionIfMissing(role, "crmTenant:*:$tenant".toString())
                 addPermissionIfMissing(role, "crmFeature:*:$tenant".toString())
-            } else {
-                // user and guest
-                addPermissionIfMissing(role, "crmTenant:activate:$tenant".toString())
             }
             role.save(failOnError: true, flush: true)
         }

@@ -33,6 +33,18 @@ class CrmTenantAdminController {
     def crmFeatureService
 
     def index() {
+        def tenantStats = [:]
+        def userStats = [:]
+        tenantStats.total = CrmTenant.count()
+        tenantStats.active = CrmTenant.createCriteria().count() {
+            or {
+                isNull('expires')
+                ge('expires', new java.sql.Date(new Date().clearTime().time))
+            }
+        }
+        userStats.total = CrmUser.count()
+        userStats.active = CrmUser.countByEnabled(true)
+        return [tenant: tenantStats, user: userStats]
     }
 
     def edit(Long id) {
@@ -136,7 +148,7 @@ class CrmTenantAdminController {
             user.save(flush: true)
             flash.warning = message(code: 'crmUserPermission.deleted.message', default: "Permission removed")
         }
-        redirect action: "edit", id: params.tenant
+        redirect action: "edit", id: params.tenant, fragment: 'permissions'
     }
 
     def deleteInvitation(Long id) {
@@ -148,6 +160,6 @@ class CrmTenantAdminController {
         } else {
             flash.error = message(code: 'default.not.found.message', args: [message(code: 'crmInvitation.label', default: 'Invitation'), id])
         }
-        redirect(action: "edit", id: params.tenant)
+        redirect action: "edit", id: params.tenant, fragment: 'permissions'
     }
 }
