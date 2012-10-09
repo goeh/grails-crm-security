@@ -34,7 +34,8 @@ class CrmTenantController {
             [group: 'settings',
                     order: 30,
                     title: 'crmTenant.permissions.label',
-                    action: 'permissions'
+                    action: 'permissions',
+                    id:  {TenantUtils.tenant}
             ]
     ]
 
@@ -235,8 +236,10 @@ class CrmTenantController {
         }
     }
 
-    def permissions() {
-        def id = TenantUtils.tenant
+    def permissions(Long id) {
+        if (! id) {
+            id = TenantUtils.tenant
+        }
         def crmTenant = CrmTenant.get(id)
         if (!crmTenant) {
             flash.error = message(code: 'crmTenant.not.found.message', args: [message(code: 'crmTenant.label', default: 'Account'), id])
