@@ -53,8 +53,8 @@ class CrmUser {
     static hasMany = [roles: CrmUserRole, permissions: CrmUserPermission, accounts: CrmTenant]
 
     static constraints = {
-        username(size: 3..80, maxSize: 80, nullable: false, blank: false, unique: true)
-        name(size: 3..80, maxSize: 80, nullable: false, blank: false)
+        username(size: 2..80, maxSize: 80, nullable: false, blank: false, unique: true)
+        name(size: 2..80, maxSize: 80, nullable: false, blank: false)
         email(maxSize: 80, blank: false, email: true)
         company(maxSize: 80, nullable: true) // Deprecated!
         address1(maxSize: 80, nullable: true)

@@ -41,7 +41,7 @@ class CrmTenant {
     static constraints = {
         locale(maxSize: 5, nullable: true, blank: false)
         expires(nullable: true)
-        name(size: 3..80, maxSize: 80, nullable: false, blank: false, unique: 'user')
+        name(size: 2..80, maxSize: 80, nullable: false, blank: false, unique: 'user')
         parent(nullable: true)
         maxGuests(nullable: true)
         maxUsers(nullable: true)

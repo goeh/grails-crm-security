@@ -23,6 +23,7 @@ import grails.plugins.crm.core.CrmException
 import grails.plugins.crm.core.CrmSecurityDelegate
 import grails.plugins.crm.core.DateUtils
 import grails.plugins.crm.core.TenantUtils
+import grails.plugins.crm.core.Pair
 import org.codehaus.groovy.grails.web.metaclass.BindDynamicMethod
 import org.codehaus.groovy.grails.web.util.WebUtils
 import org.grails.plugin.platform.events.EventMessage
@@ -921,4 +922,9 @@ class CrmSecurityService {
         event(for: "crm", topic: "resetPermissions", data: [tenant: tenantId])
     }
 
+    Pair hashPassword(String password) {
+        def salt = crmSecurityDelegate.generateSalt()
+        def hash = crmSecurityDelegate.hashPassword(password, salt)
+        return new Pair<String, String>(hash, salt.encodeBase64().toString())
+    }
 }
