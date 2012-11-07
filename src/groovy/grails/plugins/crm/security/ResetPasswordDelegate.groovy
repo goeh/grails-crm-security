@@ -59,7 +59,7 @@ class ResetPasswordDelegate {
 
     def resetPassword(String username, String password) {
         log.debug "resetPassword: Changing password for [$username]"
-        crmSecurityService.updateUser(username, [password: password, enabled:true, loginFailures: 0])
+        crmSecurityService.updateUser(username, [password: password, status:CrmUser.STATUS_ACTIVE, loginFailures: 0])
         return username
     }
 
@@ -67,7 +67,7 @@ class ResetPasswordDelegate {
         log.warn "resetPassword: Disabling account [$username]"
         def user = CrmUser.findByUsername(username)
         if (user) {
-            user.enabled = false
+            user.status = CrmUser.STATUS_BLOCKED
             user.save()
         }
     }

@@ -35,7 +35,7 @@ class CrmTenantController {
                     order: 30,
                     title: 'crmTenant.permissions.label',
                     action: 'permissions',
-                    id:  {TenantUtils.tenant}
+                    id: { TenantUtils.tenant }
             ]
     ]
 
@@ -44,6 +44,7 @@ class CrmTenantController {
     def crmSecurityService
     def crmInvitationService
     def crmFeatureService
+    def crmAccountService
 
     private boolean checkPermission(grails.plugins.crm.security.CrmTenant account) {
         account.user.guid == crmSecurityService.currentUser?.guid
@@ -83,12 +84,28 @@ class CrmTenantController {
     }
 
     def create() {
-        def crmUser = crmSecurityService.getUser()
+        def crmUser = crmSecurityService.getCurrentUser()
         if (!crmUser) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
             return
         }
-        def crmTenant = new CrmTenant()
+
+        def crmAccount = crmSecurityService.getCurrentAccount()
+        if (!crmAccount) {
+            redirect(mapping: "crm-account")
+            return
+        }
+
+        def max = crmAccount?.getOption('maxTenants') ?: 0
+        def size = crmAccount.tenants?.size() ?: 0
+        if (size >= max) {
+            flash.warning = "Max number of tenants ($max) reached for this account"
+            redirect(mapping: "crm-account")
+            return
+        }
+
+        def crmTenant = new CrmTenant(acount: crmAccount)
+
         bindData(crmTenant, params, [include: ['name', 'options']])
 
         switch (request.method) {
@@ -96,15 +113,10 @@ class CrmTenantController {
                 crmTenant.clearErrors()
                 break
             case 'POST':
-                crmTenant.user = crmUser // To get validate to pass user must be set.
                 if (crmTenant.validate()) {
                     try {
                         def options = [locale: RCU.getLocale(request)]
-                        def trialDays = grailsApplication.config.crm.tenant.trialDays
-                        if (trialDays) {
-                            options.expires = new java.sql.Date(DateUtils.endOfWeek(trialDays).time)
-                        }
-                        def tenant = crmSecurityService.createTenant(crmTenant.name, options)
+                        def tenant = crmSecurityService.createTenant(crmAccount, crmTenant.name, options)
                         def id = tenant.id
 
                         if (params.boolean('defaultTenant')) {
@@ -129,7 +141,7 @@ class CrmTenantController {
                         // Always activate the new tenant when created from user interface.
                         switchTenant(id)
 
-                        redirect(action: "index")
+                        redirect(mapping: "crm-tenant")
                         return
                     } catch (Exception e) {
                         log.error(e)
@@ -138,7 +150,10 @@ class CrmTenantController {
                 }
                 break
         }
-        return [crmUser: crmUser, crmTenant: crmTenant, features: [], allFeatures: crmFeatureService.applicationFeatures]
+
+        def availableFeature = crmAccountService.getAccountFeatures(crmAccount)
+
+        return [crmUser: crmUser, crmTenant: crmTenant, features: [], allFeatures: availableFeatures]
     }
 
     def edit() {
@@ -146,12 +161,12 @@ class CrmTenantController {
         def crmTenant = CrmTenant.get(params.id)
         if (!crmTenant) {
             flash.error = message(code: 'crmTenant.not.found.message', args: [message(code: 'crmTenant.label', default: 'Account'), params.id])
-            redirect action: 'index'
+            redirect mapping: "crm-tenant"
             return
         }
         if (!checkPermission(crmTenant)) {
             flash.error = message(code: 'crmTenant.permission.denied', args: [message(code: 'crmTenant.label', default: 'Account'), params.id])
-            redirect action: 'index'
+            redirect mapping: "crm-tenant"
             return
         }
 
@@ -194,11 +209,6 @@ class CrmTenantController {
                     return
                 }
 
-                def defaultTenant = params.boolean('defaultTenant')
-                if (defaultTenant) {
-                    crmSecurityService.updateUser(null, [defaultTenant: crmTenant.id])
-                }
-
                 if (params.boolean('showCosts')) {
                     crmTenant.setOption('agreement.costs', true)
                 } else {
@@ -211,7 +221,7 @@ class CrmTenantController {
                 }
 
                 flash.success = message(code: 'crmTenant.updated.message', args: [message(code: 'crmTenant.label', default: 'Account'), crmTenant.toString()])
-                redirect action: 'index'
+                redirect mapping: "crm-tenant"
                 break
         }
     }
@@ -226,7 +236,7 @@ class CrmTenantController {
             def tombstone = crmTenant.toString()
             crmSecurityService.deleteTenant(id)
             flash.warning = message(code: 'crmTenant.deleted.message', args: [message(code: 'crmTenant.label', default: 'Account'), tombstone])
-            redirect action: 'index'
+            redirect mapping: "crm-tenant"
         } catch (DataIntegrityViolationException e) {
             flash.error = message(code: 'crmTenant.not.deleted.message', args: [message(code: 'crmTenant.label', default: 'Account'), id])
             redirect action: 'edit', id: id
@@ -237,18 +247,18 @@ class CrmTenantController {
     }
 
     def permissions(Long id) {
-        if (! id) {
+        if (!id) {
             id = TenantUtils.tenant
         }
         def crmTenant = CrmTenant.get(id)
         if (!crmTenant) {
             flash.error = message(code: 'crmTenant.not.found.message', args: [message(code: 'crmTenant.label', default: 'Account'), id])
-            redirect action: 'index'
+            redirect mapping: "crm-tenant"
             return
         }
 
         if (!crmSecurityService.isPermitted('crmTenant:edit:' + id)) {
-            redirect action: 'index'
+            redirect mapping: "crm-tenant"
             return
         }
 
@@ -257,7 +267,7 @@ class CrmTenantController {
             case "GET":
                 break
             case "POST":
-                params.findAll {it.key.startsWith('role_expires_')}.each {key, value ->
+                params.findAll { it.key.startsWith('role_expires_') }.each { key, value ->
                     def role = CrmUserRole.get(key.substring(13))
                     if (role) {
                         bindData(role, [expires: value])
@@ -266,7 +276,7 @@ class CrmTenantController {
                         }
                     }
                 }
-                params.findAll {it.key.startsWith('perm_expires_')}.each {key, value ->
+                params.findAll { it.key.startsWith('perm_expires_') }.each { key, value ->
                     def perm = CrmUserPermission.get(key.substring(13))
                     if (perm) {
                         bindData(perm, [expires: value])
@@ -300,7 +310,7 @@ class CrmTenantController {
 
         if (!checkPermission(crmTenant)) {
             flash.error = message(code: 'crmTenant.permission.denied', args: [message(code: 'crmTenant.label', default: 'Account'), id])
-            redirect action: 'index'
+            redirect mapping: "crm-tenant"
             return
         }
 
@@ -372,7 +382,7 @@ class CrmTenantController {
 
         if (!checkPermission(crmTenant)) {
             flash.error = message(code: 'crmTenant.permission.denied', args: [message(code: 'crmTenant.label', default: 'Account'), id])
-            redirect action: 'index'
+            redirect mapping: "crm-tenant"
             return
         }
 
@@ -381,7 +391,7 @@ class CrmTenantController {
             if (email.trim().equalsIgnoreCase(currentUser?.email)) {
                 flash.error = message(code: "crmInvitation.invite.self.message", default: "You cannot invite yourself", args: [crmTenant.name, email])
             } else {
-                def alreadyInvited = crmSecurityService.getTenantPermissions(id).find {it.user.email.equalsIgnoreCase(email)}
+                def alreadyInvited = crmSecurityService.getTenantPermissions(id).find { it.user.email.equalsIgnoreCase(email) }
                 if (alreadyInvited) {
                     flash.error = message(code: "crmInvitation.invite.user.message", default: "User [{1}] already have access to {0}", args: [crmTenant.name, email])
                 } else {

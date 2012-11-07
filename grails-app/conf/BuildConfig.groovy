@@ -12,6 +12,7 @@ grails.project.dependency.resolution = {
     }
     log "warn"
     repositories {
+        grailsHome()
         grailsCentral()
         mavenRepo "http://labs.technipelago.se/repo/crm-releases-local/"
         mavenRepo "http://labs.technipelago.se/repo/plugins-releases-local/"
@@ -27,22 +28,22 @@ grails.project.dependency.resolution = {
             export = false
         }
 
-        test(":spock:0.6") { export = false }
-        test(":codenarc:latest.integration") { export = false }
+        test(":spock:0.7") { export = false }
+        test(":codenarc:0.17") { export = false }
 
         compile(":platform-core:1.0.M6") { excludes 'resources' }
         compile ":resources:1.2.RC2"
         compile ":cache:1.0.0"
         //compile ":cache-ehcache:1.0.0.M2"
-
         runtime ":jquery:1.8.0"
         runtime ":mail:1.0"
         runtime ":simple-captcha:0.8.5"
-        runtime ":text-template:latest.integration"
 
         compile "grails.crm:crm-core:latest.integration"
         runtime "grails.crm:crm-ui-bootstrap:latest.integration"
         runtime "grails.crm:crm-feature:latest.integration"
+
+        runtime ":text-template:latest.integration"
     }
 }
 

@@ -51,8 +51,14 @@ class CrmUserService {
             if (query.name) {
                 ilike('name', SearchUtils.wildcard(query.name))
             }
+            if (query.company) {
+                ilike('company', SearchUtils.wildcard(query.company))
+            }
             if (query.email) {
                 ilike('email', SearchUtils.wildcard(query.email))
+            }
+            if (query.status) {
+                eq('status', Integer.valueOf(query.status))
             }
         }
     }

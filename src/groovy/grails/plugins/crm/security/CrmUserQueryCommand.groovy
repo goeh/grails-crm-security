@@ -26,10 +26,11 @@ class CrmUserQueryCommand implements Serializable {
 
     String username
     String name
+    String company
     String email
     String postalCode
     String campaign
-    String[] status
+    Integer status
 
     String toString() {
         username.toString()

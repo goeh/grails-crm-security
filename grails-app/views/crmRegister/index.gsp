@@ -43,6 +43,10 @@
                     <g:textField name="name" value="${cmd.name}" required=""
                                  placeholder="${message(code: 'register.name.placeholder')}"/>
                 </f:field>
+                <f:field property="company" label="register.company.label">
+                    <g:textField name="company" value="${cmd.company}"
+                                 placeholder="${message(code: 'register.company.placeholder')}"/>
+                </f:field>
                 <f:field property="email" label="register.email.label">
                     <input type="email" name="email" id="email" value="${cmd.email?.encodeAsHTML()}"
                            required="" placeholder="${message(code: 'register.email.placeholder')}"/>
@@ -51,10 +55,12 @@
                     <g:passwordField name="password" value="${cmd.password}" required=""
                                      placeholder="${message(code: 'register.password.placeholder')}"/>
                 </f:field>
+                <%--
                 <f:field property="telephone" label="register.telephone.label">
                     <g:textField name="telephone" value="${cmd.telephone}"
                                  placeholder="${message(code: 'register.telephone.placeholder')}"/>
                 </f:field>
+                --%>
                 <f:field property="postalCode" label="register.postalCode.label">
                     <g:textField name="postalCode" value="${cmd.postalCode}" required=""
                                  placeholder="${message(code: 'register.postalCode.placeholder')}"/>
@@ -62,7 +68,6 @@
                 <f:field property="country" label="register.country.label">
                     <g:countrySelect name="country" value="${cmd.country}" noSelection="[null: '']"/>
                 </f:field>
-
                 <f:field property="campaign" label="register.campaign.label">
                     <g:textField name="campaign" value="${cmd.campaign}"
                                  placeholder="${message(code: 'register.campaign.placeholder')}"/>
@@ -86,7 +91,7 @@
 
                 <div class="controls">
                     <g:textField name="captcha" size="8" title="${message(code: 'register.captcha.title', default: '')}"
-                                 required=""/>
+                                 class="input-small" required=""/>
                     <img src="${createLink(controller: 'simpleCaptcha', action: 'captcha')}"/>
                 </div>
             </div>

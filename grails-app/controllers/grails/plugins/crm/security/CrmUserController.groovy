@@ -78,7 +78,7 @@ class CrmUserController {
 
         switch (request.method) {
             case 'GET':
-                return [crmUser: crmUser, tenantList: tenants]
+                return [crmUser: crmUser, tenantList: tenants, accountList: crmSecurityService.getAccounts(crmUser.username)]
             case 'POST':
                 if (params.version && crmUser.version) {
                     def version = params.version.toLong()
@@ -86,7 +86,7 @@ class CrmUserController {
                         crmUser.errors.rejectValue('version', 'crmUser.optimistic.locking.failure',
                                 [message(code: 'crmUser.label', default: 'User')] as Object[],
                                 "Another user has updated this user while you were editing")
-                        render view: 'edit', model: [crmUser: crmUser, tenantList: tenants]
+                        render view: 'edit', model: [crmUser: crmUser, tenantList: tenants, accountList: crmSecurityService.getAccounts(crmUser.username)]
                         return
                     }
                 }
@@ -94,8 +94,17 @@ class CrmUserController {
                 bindData(crmUser, params, [include: CrmUser.BIND_WHITELIST])
 
                 if (!crmUser.save(flush: true)) {
-                    render view: 'edit', model: [crmUser: crmUser, tenantList: tenants]
+                    render view: 'edit', model: [crmUser: crmUser, tenantList: tenants, accountList: crmSecurityService.getAccounts(crmUser.username)]
                     return
+                }
+                if (params.password1) {
+                    if (params.password1 == params.password2) {
+                        crmSecurityService.updateUser(crmUser.username, [password: params.password1])
+                    } else {
+                        flash.error = message(code: 'crmSettings.password.not.equal.message', default: "Passwords were not equal")
+                        render view: 'edit', model: [crmUser: crmUser, tenantList: tenants, accountList: crmSecurityService.getAccounts(crmUser.username)]
+                        return
+                    }
                 }
 
                 flash.success = message(code: 'crmUser.updated.message', args: [message(code: 'crmUser.label', default: 'User'), crmUser.toString()])
@@ -112,8 +121,14 @@ class CrmUserController {
             return
         }
 
-        if (crmUser.accounts) {
+        if (crmSecurityService.getAccounts(crmUser.username)) {
             flash.error = message(code: 'crmUser.delete.accounts.message', args: [message(code: 'crmUser.label', default: 'User'), crmUser.toString()])
+            redirect action: 'edit', id: crmUser.id
+            return
+        }
+
+        if (crmSecurityService.getTenants(crmUser.username)) {
+            flash.error = message(code: 'crmUser.delete.tenants.message', args: [message(code: 'crmUser.label', default: 'User'), crmUser.toString()])
             redirect action: 'edit', id: crmUser.id
             return
         }

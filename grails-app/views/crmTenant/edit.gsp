@@ -30,7 +30,7 @@
 
 <div class="tab-content">
 <div id="main" class="tab-pane active">
-    <g:form class="form-horizontal" action="edit" id="${crmTenant.id}">
+    <g:form action="edit" id="${crmTenant.id}">
         <g:hiddenField name="version" value="${crmTenant.version}"/>
 
         <g:hasErrors bean="${crmTenant}">
@@ -50,23 +50,6 @@
                 <div class="span7">
 
                     <f:field property="name" input-autofocus=""/>
-
-                    <div class="control-group">
-                        <label class="control-label">Startvy efter inloggning</label>
-
-                        <div class="controls">
-                            <label class="checkbox inline">
-                                <g:radio value="true" name="defaultTenant"
-                                         checked="${crmTenant.id == user.defaultTenant}"/>
-                                Ja
-                            </label>
-                            <label class="checkbox inline">
-                                <g:radio value="false" name="defaultTenant"
-                                         checked="${crmTenant.id != user.defaultTenant}"/>
-                                Nej
-                            </label>
-                        </div>
-                    </div>
 
                     <crm:hasPlugin name="crm-agreement">
                         <div class="control-group">
@@ -108,7 +91,7 @@
 
                 <div class="span5">
 
-                    <f:field property="user">
+                    <f:field property="user" >
                         <g:textField name="user" value="${crmTenant.user.name}" disabled="disabled"
                                      class="span6"/>
                     </f:field>
@@ -119,27 +102,6 @@
                                      disabled="disabled"
                                      class="span6"/>
                     </f:field>
-
-                    <f:field property="expires">
-                        <g:textField name="expires"
-                                     value="${formatDate(date: crmTenant.expires, type: 'date')}"
-                                     disabled="disabled"
-                                     class="span6"/>
-                        <g:if test="${crmTenant.expires}">
-                            <g:set var="today" value="${new Date()}"/>
-                            <div>
-                                <g:if test="${crmTenant.expires >= today}">
-                                    (<g:message code="default.days.left.message"
-                                                args="${[crmTenant.expires - today]}"
-                                                default="{0} days left"/>)
-                                </g:if>
-                                <g:else>
-                                    (<g:message code="crmTenant.expires.expired" default="Closed"/>)
-                                </g:else>
-                            </div>
-                        </g:if>
-                    </f:field>
-
                 </div>
 
             </f:with>

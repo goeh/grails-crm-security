@@ -1,3 +1,4 @@
+<%@ page import="grails.plugins.crm.security.CrmUser" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -47,28 +48,51 @@
 
             <div class="span4">
                 <f:with bean="crmUser">
-                    <f:field property="address1"/>
-                    <f:field property="address2"/>
                     <f:field property="postalCode"/>
-                    <f:field property="city"/>
                     <f:field property="countryCode" label="register.country.label">
                         <g:countrySelect name="countryCode" value="${crmUser.countryCode}"
                                          noSelection="['': '']"/>
                     </f:field>
+                    <f:field property="campaign"/>
                 </f:with>
             </div>
 
             <div class="span4">
                 <f:with bean="crmUser">
-                    <f:field property="enabled"/>
-                    <f:field property="loginFailures"/>
+                    <f:field property="status">
+                        <g:select name="status"
+                                  from="${CrmUser.constraints.status.inList}"
+                                  valueMessagePrefix="crmUser.status"
+                                  value="${crmUser.status}" class="input-medium"/>
+                    </f:field>
+                    <f:field property="loginFailures" input-class="input-medium"/>
                 </f:with>
+
+                <div class="control-group ">
+                    <label class="control-label" for="password1">
+                        <g:message code="crmSettings.password1.label" default="Password"/>
+                    </label>
+
+                    <div class="controls">
+                        <g:passwordField name="password1" value="" class="span8"/>
+                    </div>
+                </div>
+
+                <div class="control-group ">
+                    <label class="control-label" for="password2">
+                        <g:message code="crmSettings.password2.label" default="Repeat Password"/>
+                    </label>
+
+                    <div class="controls">
+                        <g:passwordField name="password2" value="" class="span8"/>
+                    </div>
+                </div>
             </div>
         </div>
 
         <div class="form-actions">
             <crm:button visual="primary" icon="icon-ok icon-white" label="crmUser.button.update.label"/>
-            <g:unless test="${crmUser.accounts}">
+            <g:unless test="${accountList}">
                 <crm:button action="delete" visual="danger" icon="icon-trash icon-white"
                             label="crmUser.button.delete.label"
                             confirm="crmUser.button.delete.confirm.message"

@@ -26,6 +26,7 @@ class RegisterUserCommand implements Serializable {
 
     String username
     String name
+    String company
     String email
     String password
     String telephone
@@ -33,30 +34,78 @@ class RegisterUserCommand implements Serializable {
     String country
     String campaign
     String captcha
-    String ip
     boolean accepted
 
     def grailsApplication
 
     static constraints = {
-        username(size: 3..80, maxSize: 80, nullable: false, blank: false, validator: {val, obj->
-            if(CrmUser.findByUsername(val)) {
-                return ['register.not.unique.message', 'username', 'User', val]
+        importFrom CrmUser, include: ['name', 'company', 'email', 'telephone', 'postalCode', 'campaign']
+
+        username(size: 2..80, maxSize: 80, nullable: false, blank: false, validator: { val, obj ->
+            CrmUser.withNewSession {
+                if (CrmUser.countByUsername(val)) {
+                    return ['register.not.unique.message', 'username', 'User', val]
+                }
             }
         })
-        name(size: 3..80, maxSize: 80, nullable: false, blank: false)
-        email(maxSize: 80, nullable: false, blank: false, email: true)
         password(maxSize: 80, nullable: false, blank: false)
-        postalCode(size: 2..20, maxSize: 20, blank: false)
-        telephone(maxSize:20, nullable:true)
-        campaign(maxSize:80, nullable:true)
-        captcha(maxSize:10, blank:false)
-        ip(maxSize: 80, nullable: true)
-        accepted(validator: {val, obj ->
+        country(size: 2..3, maxSize: 3, blank: false)
+        captcha(maxSize: 10, blank: false)
+        accepted(validator: { val, obj ->
             if (obj.grailsApplication.config.crm.register.legal && !val) {
                 return 'register.legal.false.message'
             }
             return null
         })
+    }
+
+    Map<String, Object> toMap() {
+        def map = ['username', 'name', 'company', 'email', 'telephone', 'password',
+                'postalCode', 'campaign', 'captcha', 'accepted'].inject([:]) { m, p ->
+            m[p] = this[p]
+            return m
+        }
+        if (postalCode) {
+            postalCode = postalCode.replaceAll(/\W/, '')
+        }
+        if (country) {
+            // Country codes can be stored as 2- or 3-letter ISO3166 codes.
+            def config = grailsApplication.config
+            if ((config.crm.register.countryCode.length == 2 && country.length() == 3)
+                    || (config.crm.register.countryCode.length == 3 && country.length() == 2)) {
+                map.countryCode = convertISO3166(country)
+            } else {
+                map.countryCode = country
+            }
+        }
+
+        return map
+    }
+
+    private static final Map countryCodes = Locale.getISOCountries().inject([:]) { map, twoLetterCode ->
+        def l = new Locale("", twoLetterCode)
+        map[l.getISO3Country()] = l.getCountry()
+        return map
+    }
+
+    /**
+     * Convert between ISO3166-alpha2 and ISO3166-alpha3 codes.
+     * If argument is three letters, the two letter representation is returned.
+     * If argument is two letters, the three letter representation is returned.
+     *
+     * @params countryCode two or three letter ISO3166 country code.
+     */
+    private String convertISO3166(String countryCode) {
+        if (countryCode == null) {
+            throw new IllegalArgumentException("countryCode is null")
+        }
+        switch (countryCode.length()) {
+            case 2:
+                return new Locale("", countryCode).getISO3Country()
+            case 3:
+                return countryCodes[countryCode]
+            default:
+                throw new IllegalArgumentException("Invalid length of country code: " + countryCode)
+        }
     }
 }

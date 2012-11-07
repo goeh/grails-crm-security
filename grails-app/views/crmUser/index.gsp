@@ -1,3 +1,4 @@
+<%@ page import="grails.plugins.crm.security.CrmUser" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -16,25 +17,28 @@
         <g:form action="list">
 
             <f:with bean="cmd">
-                <f:field property="username" label="crmUser.username.label" input-autofocus=""/>
-                <f:field property="name" label="crmUser.name.label"/>
-                <f:field property="email" label="crmUser.email.label"/>
-                <f:field property="postalCode" label="crmUser.postalCode.label"/>
-                <f:field property="campaign" label="crmUser.campaign.label"/>
-                <div class="control-group">
-                    <label class="control-label"><g:message code="crmUser.enabled.label" default="Status"/></label>
 
-                    <div class="controls">
-                        <label class="checkbox inline">
-                            <g:checkBox name="status" value="true"/>
-                            <g:message code="crmUser.enabled.true.label" default="Enabled"/>
-                        </label>
-                        <label class="checkbox inline">
-                            <g:checkBox name="status" value="false"/>
-                            <g:message code="crmUser.enabled.false.label" default="Disabled"/>
-                        </label>
+                <div class="row-fluid">
+                    <div class="span6">
+                        <f:field property="username" label="crmUser.username.label" input-autofocus=""/>
+                        <f:field property="email" label="crmUser.email.label"/>
+                        <f:field property="name" label="crmUser.name.label"/>
+                        <f:field property="company" label="crmUser.company.label"/>
+                    </div>
+
+                    <div class="span6">
+                        <f:field property="status">
+                            <g:select name="status"
+                                      from="${CrmUser.constraints.status.inList}"
+                                      valueMessagePrefix="crmUser.status"
+                                      value="${cmd.status}" noSelection="['': '']"
+                                      class="input-medium"/>
+                        </f:field>
+                        <f:field property="postalCode" label="crmUser.postalCode.label"/>
+                        <f:field property="campaign" label="crmUser.campaign.label"/>
                     </div>
                 </div>
+
             </f:with>
 
             <div class="form-actions btn-toolbar">

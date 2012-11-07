@@ -17,10 +17,11 @@
 package grails.plugins.crm.security
 
 import grails.plugins.crm.core.AuditEntity
+import grails.plugins.crm.core.TenantUtils
 
 /**
- * This domain class represents a tenant, also known as "account".
- * A user can be associated with multiple tenants but only have one tenant active at a given time.
+ * This domain class represents a tenant, also known as "view".
+ * A user can be given access to multiple tenants but only have one tenant active at a given time.
  *
  * @author Goran Ehrsson
  * @since 0.1
@@ -29,23 +30,19 @@ import grails.plugins.crm.core.AuditEntity
 class CrmTenant {
 
     // Long id of this account will be used as tenantId for all instances created by this tenant.
-    java.sql.Date expires
+    //java.sql.Date expires
     String locale
+    String currency
     String name
     CrmTenant parent
-    Integer maxGuests
-    Integer maxUsers
-    Integer maxAdmins
-    static belongsTo = [user: CrmUser]
+
+    static belongsTo = [account: CrmAccount]
     static hasMany = [options: CrmTenantOption]
     static constraints = {
         locale(maxSize: 5, nullable: true, blank: false)
-        expires(nullable: true)
-        name(size: 2..80, maxSize: 80, nullable: false, blank: false, unique: 'user')
+        currency(maxSize: 4, nullable: true)
+        name(size: 2..80, maxSize: 80, nullable: false, blank: false, unique: 'account')
         parent(nullable: true)
-        maxGuests(nullable: true)
-        maxUsers(nullable: true)
-        maxAdmins(nullable: true)
     }
     static mapping = {
         table 'crm_tenant'
@@ -53,7 +50,7 @@ class CrmTenant {
         cache 'nonstrict-read-write'
     }
 
-    static transients = ['dao', 'option', 'children']
+    static transients = ['dao', 'children', 'current', 'user', 'localeInstance']
 
     /**
      * Returns the name property.
@@ -63,20 +60,32 @@ class CrmTenant {
         name
     }
 
-    List<CrmTenant> getChildren() {
+    transient boolean isCurrent() {
+        id == TenantUtils.getTenant()
+    }
+
+    transient CrmUser getUser() {
+        account.user
+    }
+
+    transient List<CrmTenant> getChildren() {
         CrmTenant.findAllByParent(this)
+    }
+
+    transient Locale getLocaleInstance() {
+        locale ? new Locale(* locale.split('_')) : Locale.getDefault()
     }
 
     /**
      * Clients should use this method to get tenant properties instead of accessing the domain instance directly.
-     * The following properties are returned as a Map: [Long id, String name, Map user [username, name, email]]
+     * The following properties are returned as a Map: [Long id, String name, Map account [id, name, email]]
      * @return a data access object (Map) representing the domain instance.
      */
-    Map<String, Object> getDao() {
-        [id: id, name: name, parent: parent?.id, locale: locale ? new Locale(* locale.split('_')) : Locale.getDefault(),
-                user: [id: user.id, username: user.username, name: user.name, email: user.email],
-                options: getOptionsMap(), dateCreated: dateCreated, expires: expires,
-                maxGuests: maxGuests, maxUsers: maxUsers, maxAdmins: maxAdmins]
+    transient Map<String, Object> getDao() {
+        [id: id, name: name, parent: parent?.id, locale: getLocaleInstance(),
+                account: [id: account.id, name: account.name, email: account.email, telephone: account.telephone,
+                        user: [username: account.user?.username, email: account.user?.email, name: account.user?.name]],
+                options: getOptionsMap(), dateCreated: dateCreated]
     }
 
     /**
@@ -105,8 +114,11 @@ class CrmTenant {
         }
     }
 
-    def getOption(String key) {
-        options.find {it.key == key}?.value
+    def getOption(String key = null) {
+        if(key == null) {
+            return getOptionsMap()
+        }
+        return options.find {it.key == key}?.value
     }
 
     boolean removeOption(String key) {

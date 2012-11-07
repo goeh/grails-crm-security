@@ -8,10 +8,9 @@
 
         <th style="width:16px;"></th>
         <th><g:message code="crmTenant.name.label"/></th>
-        <th><g:message code="crmTenant.user.label"/></th>
+        <th><g:message code="crmTenant.account.label"/></th>
         <th><g:message code="crmTenant.locale.label"/></th>
         <th><g:message code="crmTenant.dateCreated.label"/></th>
-        <th><g:message code="crmTenant.expires.label"/></th>
         <th style="width:16px;"></th>
 
     </tr>
@@ -25,7 +24,7 @@
             </td>
 
             <td>
-                <g:if test="${m.my}">
+                <g:if test="${m.user == crmUser}">
                     <g:link action="edit" id="${m.id}">${m.name}</g:link>
                 </g:if>
                 <g:else>
@@ -34,17 +33,17 @@
             </td>
 
             <td>
-                ${m.user.name}
+                ${m.account}
             </td>
 
             <td>
-                ${m.locale.getDisplayName(request.locale ?: Locale.default)}
+                ${m.localeInstance.getDisplayName(request.locale ?: Locale.default)}
             </td>
 
             <td>
                 <g:formatDate type="date" date="${m.dateCreated}"/>
             </td>
-
+<%--
             <td>
                 <g:formatDate type="date" date="${m.expires}"/>
                 <g:if test="${m.expires}">
@@ -61,7 +60,7 @@
                     <g:message code="crmTenant.expires.never" default="Never"/>
                 </g:else>
             </td>
-
+--%>
             <td>
                 <g:unless test="${m.current}">
                     <g:link action="activate" params="${[id: m.id, referer: createLink(action: 'index')]}"

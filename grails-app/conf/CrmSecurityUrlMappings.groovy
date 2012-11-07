@@ -17,27 +17,35 @@
 class CrmSecurityUrlMappings {
 
     static mappings = {
+        // CrmRegisterController
         name 'crm-register': "/register" {
             controller = 'crmRegister'
             action = 'index'
         }
+        // CrmSettingsController
         name 'crm-settings': "/settings" {
             controller = 'crmSettings'
             action = 'index'
         }
+        // CrmAccountController
         name 'crm-account': "/account" {
+            controller = 'crmAccount'
+            action = 'index'
+        }
+        // CrmTenantController
+        name 'crm-tenant': "/tenant" {
             controller = 'crmTenant'
             action = 'index'
         }
-        name 'crm-account-create': "/account/create" {
+        name 'crm-tenant-create': "/tenant/create" {
             controller = 'crmTenant'
             action = 'create'
         }
-        name 'crm-account-activate': "/account/activate/$id" {
+        name 'crm-tenant-activate': "/tenant/activate/$id" {
             controller = 'crmTenant'
             action = 'activate'
         }
-        name 'crm-permissions': "/account/permissions" {
+        name 'crm-permissions': "/tenant/permissions" {
             controller = 'crmTenant'
             action = 'permissions'
         }

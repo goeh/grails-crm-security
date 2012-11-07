@@ -43,7 +43,7 @@ class CrmTenantAdminController {
             }
         }
         userStats.total = CrmUser.count()
-        userStats.active = CrmUser.countByEnabled(true)
+        userStats.active = CrmUser.countByStatus(CrmUser.STATUS_ACTIVE)
         return [tenant: tenantStats, user: userStats]
     }
 

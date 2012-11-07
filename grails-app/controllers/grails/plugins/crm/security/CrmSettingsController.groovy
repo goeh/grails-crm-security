@@ -21,45 +21,68 @@ import javax.servlet.http.HttpServletResponse
 class CrmSettingsController {
 
     def crmSecurityService
-    def userSettingsService
     def resetPasswordService
 
-    private static final List USER_BIND_WHITELIST = ['name', 'email', 'company', 'address1', 'address2', 'postalCode', 'city', 'countryCode', 'telephone', 'currency']
+    static allowedMethods = [update: 'POST']
 
     def index() {
-        getModel(crmSecurityService.getUser())
-    }
-
-    private Map getModel(user) {
-        def tenants = crmSecurityService.getAllTenants()
-        def current = crmSecurityService.currentTenant
-
-        // Load user settings
-        def settings = [:]
-        def username = user.username
-        def questions = resetPasswordService?.getAvailableQuestions()
-        def answers = resetPasswordService?.getQuestionsForUser(username)
-        settings.favoritesMenu = userSettingsService?.getValue(username, "favoritesMenu") ?: 'top'
-        settings.selectionsMenu = userSettingsService?.getValue(username, "selectionsMenu") ?: 'top'
-        return [user: user, settings: settings, questions: questions, answers: answers,
-                tenantList: tenants.collect {crmSecurityService.getTenantInfo(it) + [current: current?.id == it]}]
-    }
-
-    def update() {
-        def user = crmSecurityService.getUser()
+        def user = crmSecurityService.getCurrentUser()
         if (!user) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
             return
         }
+        def cmd = new CrmSettingsEditCommand()
 
-        bindData(user, params, [include: USER_BIND_WHITELIST])
+        bindData(cmd, user.properties, [include: CrmUser.BIND_WHITELIST])
+
+        getModel(cmd)
+    }
+
+    private Map getModel(CrmSettingsEditCommand cmd) {
+        def crmUser = crmSecurityService.getCurrentUser()
+        def options = crmUser.option
+        def username = crmUser.username
+        def questions = resetPasswordService?.getAvailableQuestions()
+        def answers = resetPasswordService?.getQuestionsForUser(username)
+        def tenants = crmSecurityService.getTenants(username)
+        def timezones = TimeZone.getAvailableIDs().findAll { it.contains("Europe") }.collect { TimeZone.getTimeZone(it) }
+        def currencies = ['SEK', 'NOK', 'EUR', 'GBP', 'USD'].collect { Currency.getInstance(it) }
+        // TODO Make start-page contept dynamic so pages can be pluggable from Config.groovy
+        // or better yet, from installed features.
+        def startPages = ['start:index',
+                'crmCalendar:index',
+                'avtalaAgreement:dashboard', 'crmAgreement:index', 'crmAgreement:list',
+                'crmContact:index', 'crmContact:list',
+                'crmFolder:index', 'crmFolder:list'].inject([:]) { map, key ->
+            map[key] = message(code: key.replace(':', '.') + '.label', default: key)
+            return map
+        }
+        cmd.startPage = options?.startPage
+        return [cmd: cmd, crmUser: crmUser, startPages: startPages,
+                options: options, tenants: tenants,
+                roles: crmUser.roles,
+                questions: questions, answers: answers,
+                timezones: timezones, currencies: currencies]
+    }
+
+    def update(CrmSettingsEditCommand cmd) {
+        def user = crmSecurityService.getCurrentUser()
+        if (!user) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
+            return
+        }
+        if (!cmd.validate()) {
+            render(view: "index", model: getModel(cmd))
+            return
+        }
+
+        bindData(user, params, [include: CrmUser.BIND_WHITELIST])
+
+        user.setOption('startPage', cmd.startPage)
 
         if (user.save()) {
             def username = user.username
-            if(userSettingsService) {
-                userSettingsService.update(username, "favoritesMenu", params.favoritesMenu)
-                userSettingsService.update(username, "selectionsMenu", params.selectionsMenu)
-            }
+
             if (resetPasswordService) {
                 def qa = [:]
                 10.times {
@@ -78,7 +101,7 @@ class CrmSettingsController {
                     crmSecurityService.updateUser(username, [password: params.password1])
                 } else {
                     flash.error = message(code: 'crmSettings.password.not.equal.message', default: "Passwords were not equal")
-                    render(view: "index", model: getModel(user))
+                    render(view: "index", model: getModel(cmd))
                     return
                 }
             }
@@ -89,7 +112,7 @@ class CrmSettingsController {
         } else {
             log.error("Failed to save settings for user [${user.username}] ${user.errors}")
             flash.error = message(code: 'crmSettings.not.updated.message', default: "Settings could not be updated")
-            render(view: "index", model: getModel(user))
+            render(view: "index", model: getModel(cmd))
         }
     }
 }

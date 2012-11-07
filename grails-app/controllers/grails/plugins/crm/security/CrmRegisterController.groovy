@@ -33,91 +33,51 @@ class CrmRegisterController {
 
     LinkGenerator grailsLinkGenerator
 
-    private Map countryCodes
-
-    /**
-     * Convert between ISO3166-alpha2 and ISO3166-alpha3 codes.
-     * If argument is three letters, the two letter representation is returned.
-     * If argument is two letters, the three letter representation is returned.
-     *
-     * @params countryCode two or three letter ISO3166 country code.
-     */
-    private String convertISO3166(String countryCode) {
-        if (countryCode == null) {
-            throw new IllegalArgumentException("countryCode is null")
-        }
-        switch (countryCode.length()) {
-            case 2:
-                return new Locale("", countryCode).getISO3Country()
-            case 3:
-                if (!countryCodes) {
-                    for (twoLetterCode in Locale.getISOCountries()) {
-                        Locale l = new Locale("", twoLetterCode)
-                        countryCodes[l.getISO3Country()] = l.getCountry()
-                    }
-                }
-                return countryCodes[countryCode]
-            default:
-                throw new IllegalArgumentException("Invalid length of country code: $countryCode")
-        }
-    }
 
     def index(RegisterUserCommand cmd) {
 
-        cmd.ip = request.remoteAddr
-
-        if (request.method == "POST") {
-            if (!cmd.hasErrors()) {
-                if (simpleCaptchaService.validateCaptcha(params.captcha)) {
-                    def success = false
-                    withForm {
-                        try {
-                            def props = cmd.properties
-                            def countryCode = props.country
-                            if (countryCode) {
-                                // Country codes can be stored as 2- or 3-letter ISO3166 codes.
-                                def config = grailsApplication.config
-                                if ((config.crm.register.countryCode.length == 2 && countryCode.length() == 3)
-                                        || (config.crm.register.countryCode.length == 3 && countryCode.length() == 2)) {
-                                    props.country = convertISO3166(countryCode)
-                                }
-                            }
-                            def user = crmSecurityService.createUser(props)
-                            TenantUtils.withTenant(1) {
-                                sendVerificationEmail(user)
-                            }
-                            success = true
-                        } catch (Exception e) {
-                            log.error("Could not create user ${cmd.name} (${cmd.username}) <${cmd.email}>", e)
-                            flash.error = 'register.error.message'
-                            flash.args = [e.message]
-                            flash.defaultMessage = "An error occured while creating the account"
-                        }
-
-                    }.invalidToken {
-                        cmd.clearErrors()
-                        flash.error = "form.submit.twice"
-                        flash.defaultMessage = "Form submitted twice!"
-                    }
-                    if (success) {
-                        render(view: 'verify', model: [user: cmd])
-                        return
-                    }
-                } else {
+        switch (request.method) {
+            case "POST":
+                if (cmd.hasErrors()) {
+                    return [cmd: cmd]
+                }
+                if (!simpleCaptchaService.validateCaptcha(params.captcha)) {
                     cmd.errors.rejectValue("captcha", "captcha.invalid.message")
+                    return [cmd: cmd]
                 }
-            }
-        } else {
-            if (params.i) {
-                request.session.crmRegisterInvitation = params.i
-            }
-            if (params.c) {
-                request.session.crmRegisterCampaign = params.c
-                if(! cmd.campaign) {
-                    cmd.campaign = params.c
+                def success = false
+                withForm {
+                    try {
+                        def props = cmd.toMap()
+                        props.ip = request.remoteAddr // Save IP address if we need to track abuse.
+                        def user = crmSecurityService.createUser(props)
+                        TenantUtils.withTenant(1) {
+                            sendVerificationEmail(user.dao)
+                        }
+                        success = true
+                    } catch (Exception e) {
+                        log.error("Could not create user ${cmd.name} (${cmd.username}) <${cmd.email}>", e)
+                        flash.error = message(code: 'register.error.message', default: "Failed to register, please try again later", args: [e.message])
+                    }
+                }.invalidToken {
+                    cmd.clearErrors()
+                    flash.error = "form.submit.twice"
+                    flash.defaultMessage = "Form submitted twice!"
                 }
-            }
-            cmd.clearErrors()
+                if (success) {
+                    render(view: 'verify', model: [user: cmd])
+                    return
+                }
+                break
+            case "GET":
+                if (params.c) {
+                    request.session.crmRegisterCampaign = params.c
+                    if (!cmd.campaign) {
+                        cmd.campaign = params.c
+                    }
+                }
+                cmd.clearErrors()
+                break
         }
 
         return [cmd: cmd]
@@ -133,10 +93,10 @@ class CrmRegisterController {
             throw new RuntimeException("Template not found: [name=register-verify-email]")
         }
         sendMail {
-            if(bodyText && bodyHtml) {
+            if (bodyText && bodyHtml) {
                 multipart true
             }
-            if(config.from) {
+            if (config.from) {
                 from config.from
             }
             to params.email
@@ -163,8 +123,7 @@ class CrmRegisterController {
     def confirm(String id) {
         def user = CrmUser.findByGuid(id)
         if (user) {
-            def userInfo = crmSecurityService.updateUser(user.username, [enabled:true])
-            //SecurityUtils.subject.login(new UsernamePasswordToken(cmd.username, cmd.password))
+            def userInfo = crmSecurityService.updateUser(user.username, [status: CrmUser.STATUS_ACTIVE])
             def targetUri = grailsApplication.config.crm.register.welcome.url ?: "/welcome"
             return [user: userInfo, targetUri: targetUri]
         } else {

@@ -22,12 +22,107 @@ package grails.plugins.crm.security
 class CrmTenantSpec extends grails.plugin.spock.IntegrationSpec {
 
     def crmSecurityService
+    def crmFeatureService
 
-    def "set and get option"() {
+    def "create tenant"() {
         given:
-        def userDAO = crmSecurityService.createUser(username: "inttest", name: "Integration Test", email: "test@test.com", password: "secret")
-        def user = CrmUser.load(userDAO.id)
-        def t = new CrmTenant(name: "test", features: ["test", "integration"], user: user).save(failOnError: true, flush: true)
+        def result
+        def features
+        def user = crmSecurityService.createUser([username: "test5", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
+        def account = crmSecurityService.runAs(user.username) {
+            crmSecurityService.createAccount(name: "My Account", telephone: "+46800000",
+                    address1: "Box 123", postalCode: "12345", city: "Capital", reference: "test")
+        }
+        when:
+        crmSecurityService.runAs(user.username) {
+            result = crmSecurityService.getTenants()
+        }
+        then:
+        result.isEmpty()
+
+        when:
+        crmSecurityService.runAs(user.username) {
+            def t1 = crmSecurityService.createTenant(account, "My First Tenant")
+            def t2 = crmSecurityService.createTenant(account, "My Second Tenant")
+            result = crmSecurityService.getTenants()
+            features = crmFeatureService.getFeatures(t1.id)
+        }
+        then:
+        result.size() == 2
+        features.find { it.name == 'security' }
+    }
+
+    def "create tenant with locale"() {
+
+        given:
+        def result = []
+        def swedish = new Locale("sv", "SE")
+        def spanish = new Locale("es", "ES")
+        def user = crmSecurityService.createUser([username: "test16", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
+        def account = crmSecurityService.runAs(user.username) { crmSecurityService.createAccount() }
+
+        when:
+        crmSecurityService.runAs(user.username) {
+            result << crmSecurityService.createTenant(account, "Default")
+            result << crmSecurityService.createTenant(account, "Svenska", [locale: swedish])
+            result << crmSecurityService.createTenant(account, "Español", [locale: spanish])
+        }
+        then:
+        result[0].locale == null
+        result[1].locale == swedish.toString()
+        result[2].locale == spanish.toString()
+    }
+
+    def "update tenant"() {
+        def tenant
+
+        given:
+        def user = crmSecurityService.createUser([username: "test6", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
+        def account = crmSecurityService.runAs(user.username) { crmSecurityService.createAccount() }
+
+        when:
+        crmSecurityService.runAs(user.username) { tenant = crmSecurityService.createTenant(account, "My Tenant") }
+        then:
+        crmSecurityService.getTenantInfo(tenant.id)?.name == "My Tenant"
+
+        when:
+        crmSecurityService.updateTenant(tenant.id, [name: "Our Tenant"])
+
+        then:
+        crmSecurityService.getTenantInfo(tenant.id)?.name == "Our Tenant"
+    }
+
+    def "set tenant options"() {
+        def tenant
+
+        given:
+        def user = crmSecurityService.createUser([username: "test7", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
+        def account = crmSecurityService.runAs(user.username) { crmSecurityService.createAccount() }
+
+        when:
+        crmSecurityService.runAs(user.username) {
+            tenant = crmSecurityService.createTenant(account, "My Tenant")
+        }
+        then:
+        tenant.getOption('foo') == null
+
+        when:
+        tenant = crmSecurityService.updateTenant(tenant.id, [options: [foo: 42]])
+
+        then:
+        tenant.getOption('foo') == 42
+        crmSecurityService.getTenantInfo(tenant.id).options.foo == 42
+    }
+
+    def "set and get tenant options"() {
+        given:
+        def user = crmSecurityService.createUser(username: "inttest", name: "Integration Test", email: "test@test.com", password: "secret", status: CrmUser.STATUS_ACTIVE)
+        def t
+
+        crmSecurityService.runAs(user.username) {
+            def account = crmSecurityService.createAccount()
+            t = crmSecurityService.createTenant(account, "test")
+        }
 
         when:
         t.setOption("foo", 42)

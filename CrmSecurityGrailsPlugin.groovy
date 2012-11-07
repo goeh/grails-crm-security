@@ -57,7 +57,7 @@ Specific security implementeations exists for Apache Shiro (crm-security-shiro).
             permissions {
                 guest "crmTenant:index", "crmSettings:*"
                 user "crmTenant:index,create", "crmSettings:*"
-                admin "crmSettings:*"
+                admin "crmSettings:*", "crmAccount:*"
                 // NOTE Tenant specific permissions are added to each role
                 // by CrmSecurityService#setupFeaturePermissions()
                 // TODO is it possible to extend setupFeaturePermissions()

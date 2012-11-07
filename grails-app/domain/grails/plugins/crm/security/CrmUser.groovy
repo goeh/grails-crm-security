@@ -31,70 +31,77 @@ import grails.plugins.crm.core.UuidEntity
 class CrmUser {
 
     String username
-    String name
     String email
-    String company // Deprecated!
-    String address1
-    String address2
-    String address3
-    String postalCode
-    String city
-    String region
-    String countryCode
-    String currency
-    String timezone
+    String name
+    String company
     String telephone
-    String mobile
+    String timezone
+    String postalCode
+    String countryCode
     String campaign
-    boolean enabled
-    int loginFailures
+    Integer status = STATUS_NEW
+    Integer loginFailures = 0
     Long defaultTenant
 
-    static hasMany = [roles: CrmUserRole, permissions: CrmUserPermission, accounts: CrmTenant]
+    public static final Integer STATUS_NEW = 0
+    public static final Integer STATUS_ACTIVE = 1
+    public static final Integer STATUS_BLOCKED = -1
+
+    static hasMany = [roles: CrmUserRole, permissions: CrmUserPermission, options: CrmUserOption]
 
     static constraints = {
         username(size: 2..80, maxSize: 80, nullable: false, blank: false, unique: true)
         name(size: 2..80, maxSize: 80, nullable: false, blank: false)
+        company(maxSize: 80, nullable: true)
         email(maxSize: 80, blank: false, email: true)
-        company(maxSize: 80, nullable: true) // Deprecated!
-        address1(maxSize: 80, nullable: true)
-        address2(maxSize: 80, nullable: true)
-        address3(maxSize: 80, nullable: true)
-        postalCode(size: 2..20, maxSize: 20, nullable: true)
-        city(size: 2..40, maxSize: 40, nullable: true)
-        region(maxSize: 40, nullable: true)
-        countryCode(size: 2..3, maxSize: 3, nullable: true)
-        currency(maxSize: 4, nullable: true)
-        timezone(maxSize: 40, nullable: true)
         telephone(size: 4..20, maxSize: 20, nullable: true)
-        mobile(size: 4..20, maxSize: 20, nullable: true)
-        campaign(size: 2..20, maxSize: 20, nullable: true)
+        timezone(maxSize: 40, nullable: true)
+        postalCode(size: 2..20, maxSize: 20, nullable: true)
+        countryCode(size: 2..3, maxSize: 3, nullable: true)
+        campaign(maxSize: 40, nullable: true)
         defaultTenant(nullable: true)
+        status(inList: [STATUS_NEW, STATUS_ACTIVE, STATUS_BLOCKED])
     }
 
     static mapping = {
         table 'crm_user'
         sort 'username'
         cache 'read-write'
-        accounts sort: 'name'
         roles joinTable: [name: 'crm_user_role', key: 'user_id'], cascade: 'all-delete-orphan'
         permissions cascade: 'all-delete-orphan'
     }
 
-    static transients = ['dao']
+    static transients = ['dao', 'enabled', 'blocked']
 
     static searchable = {
-        only = ['username', 'name']
+        only = ['username', 'email', 'name', 'company']
     }
 
-    static List BIND_WHITELIST = ['username', 'name', 'email', 'company', 'address1', 'address2', 'address3', 'postalCode', 'city', 'region', 'countryCode', 'currency', 'timezone', 'telephone', 'mobile', 'campaign', 'enabled', 'loginFailures', 'defaultTenant']
+    static List BIND_WHITELIST = [
+            'username', 'email', 'name', 'company', 'telephone', 'timezone', 'postalCode', 'countryCode', 'campaign',
+            'status', 'loginFailures', 'defaultTenant'
+    ]
+
+    def beforeValidate() {
+        if (loginFailures != null && loginFailures > 9) {
+            status = STATUS_BLOCKED
+        }
+    }
 
     /**
      * Returns the username property.
      * @return username property
      */
     String toString() {
-        username
+        username.toString()
+    }
+
+    boolean isEnabled() {
+        status == STATUS_ACTIVE
+    }
+
+    boolean isBlocked() {
+        status == STATUS_BLOCKED
     }
 
     /**
@@ -107,42 +114,86 @@ class CrmUser {
         def tenant = TenantUtils.tenant
         def allPerm = []
         if (permissions) {
-            allPerm.addAll(permissions.findAll {it.tenantId == tenant}.collect {it.toString()})
+            allPerm.addAll(permissions.findAll { it.tenantId == tenant }.collect { it.toString() })
         }
         def allRoles = []
-        for (role in roles.findAll {it.role.tenantId == tenant}) {
+        for (role in roles.findAll { it.role.tenantId == tenant }) {
             allRoles << role.toString()
             def p = role.role.permissions
             if (p) {
                 allPerm.addAll(p)
             }
         }
-        def map = properties.subMap(['id', 'guid', 'username', 'name', 'email', 'company', 'address1', 'address2', 'address3', 'postalCode', 'city', 'region', 'countryCode', 'currency', 'telephone', 'mobile', 'enabled', 'campaign', 'defaultTenant'])
+        def map = properties.subMap(['id', 'guid', 'username', 'email', 'name', 'company', 'telephone',
+                'postalCode', 'countryCode', 'campaign', 'status', 'enabled', 'defaultTenant'])
         def tz = timezone ? TimeZone.getTimeZone(timezone) : TimeZone.getDefault()
         map.timezone = tz
         map.roles = allRoles
         map.permissions = allPerm
+        map.options = getOptionsMap()
         return map
     }
 
+    /**
+     * Return tenant parameters (options) as a Map.
+     *
+     * @return options
+     */
+    private Map<String, Object> getOptionsMap() {
+        options.inject([:]) {map, o ->
+            map[o.key] = o.value
+            map
+        }
+    }
+
+    void setOption(String key, Object value) {
+        if (value == null) {
+            removeOption(key)
+        } else {
+            def o = options.find {it.key == key}
+            if (o) {
+                o.value = value
+            } else {
+                o = new CrmUserOption(key, value)
+                addToOptions(o)
+            }
+        }
+    }
+
+    def getOption(String key = null) {
+        if(key == null) {
+            return getOptionsMap()
+        }
+        return options.find {it.key == key}?.value
+    }
+
+    boolean removeOption(String key) {
+        def o = options.find {it.key == key}
+        if (o) {
+            removeFromOptions(o)
+            return true
+        }
+        return false
+    }
+
     boolean equals(o) {
-        if (this.is(o)) return true;
-        if (getClass() != o.class) return false;
+        if (this.is(o)) return true
+        if (getClass() != o.class) return false
 
-        CrmUser that = (CrmUser) o;
+        CrmUser that = (CrmUser) o
 
-        if (email != that.email) return false;
-        if (name != that.name) return false;
-        if (username != that.username) return false;
+        if (username != that.username) return false
+        if (email != that.email) return false
+        if (name != that.name) return false
 
-        return true;
+        return true
     }
 
     int hashCode() {
-        int result;
-        result = (username != null ? username.hashCode() : 0);
-        result = 31 * result + (name != null ? name.hashCode() : 0);
-        result = 31 * result + (email != null ? email.hashCode() : 0);
-        return result;
+        int result
+        result = (username != null ? username.hashCode() : 0)
+        result = 31 * result + (name != null ? name.hashCode() : 0)
+        result = 31 * result + (email != null ? email.hashCode() : 0)
+        return result
     }
 }

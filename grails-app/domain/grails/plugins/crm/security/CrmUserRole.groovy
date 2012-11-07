@@ -31,9 +31,9 @@ class CrmUserRole {
     static belongsTo = [user: CrmUser]
     static constraints = {
         role(validator: {val, obj->
-            def tenantExpires = CrmTenant.withNewSession { CrmTenant.get(obj.role?.tenantId)?.expires }
-            if (obj.expires && tenantExpires && obj.expires > tenantExpires) {
-                return ['expires.after.tenant', obj.expires, tenantExpires]
+            def accountExpires = CrmAccount.withNewSession { CrmTenant.get(obj.role?.tenantId)?.account?.expires }
+            if (obj.expires && accountExpires && obj.expires > accountExpires) {
+                return ['expires.after.account', obj.expires, accountExpires]
             }
             return null
         })

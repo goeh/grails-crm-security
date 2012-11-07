@@ -12,62 +12,53 @@
             args="[entityName]">
 </crm:header>
 
-<div class="row-fluid">
-    <div class="span9">
-        <table class="table table-striped">
-            <thead>
-            <tr>
-                <g:sortableColumn property="username"
-                                  title="${message(code: 'crmUser.username.label', default: 'Username')}"/>
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <crm:sortableColumn property="username"
+                            title="${message(code: 'crmUser.username.label', default: 'Username')}"/>
 
-                <g:sortableColumn property="name"
-                                  title="${message(code: 'crmUser.name.label', default: 'Name')}"/>
+        <crm:sortableColumn property="name"
+                            title="${message(code: 'crmUser.name.label', default: 'Name')}"/>
 
-                <g:sortableColumn property="email"
-                                  title="${message(code: 'crmUser.email.label', default: 'Email')}"/>
+        <crm:sortableColumn property="company"
+                            title="${message(code: 'crmUser.company.label', default: 'Company')}"/>
 
-                <g:sortableColumn property="postalCode"
-                                  title="${message(code: 'crmUser.postalCode.label', default: 'Postal Code')}"/>
-                <g:sortableColumn property="campaign"
-                                  title="${message(code: 'crmUser.campaign.label', default: 'Campaign')}"/>
-            </tr>
-            </thead>
-            <tbody>
-            <g:each in="${result}" var="crmUser">
-                <tr class="${crmUser.enabled ? '' : 'disabled'}">
+        <crm:sortableColumn property="email"
+                            title="${message(code: 'crmUser.email.label', default: 'Email')}"/>
 
-                    <td>
-                        <g:link action="show" id="${crmUser.id}">
-                            ${fieldValue(bean: crmUser, field: "username")}
-                        </g:link>
-                        ${crmUser.enabled ? '' : '<i class="icon-ban-circle"></i>'}
-                    </td>
+        <crm:sortableColumn property="postalCode"
+                            title="${message(code: 'crmUser.postalCode.label', default: 'Postal Code')}"/>
+        <crm:sortableColumn property="campaign"
+                            title="${message(code: 'crmUser.campaign.label', default: 'Campaign')}"/>
+    </tr>
+    </thead>
+    <tbody>
+    <g:each in="${result}" var="crmUser">
+        <tr class="${crmUser.enabled ? '' : 'disabled'}">
 
-                    <td>
-                        ${fieldValue(bean: crmUser, field: "name")}
-                    </td>
-                    <td>
-                        ${fieldValue(bean: crmUser, field: "email")}
-                    </td>
-                    <td>${fieldValue(bean: crmUser, field: "postalCode")}</td>
-                    <td>${fieldValue(bean: crmUser, field: "campaign")}</td>
+            <td>
+                <g:link action="show" id="${crmUser.id}">
+                    ${fieldValue(bean: crmUser, field: "username")}
+                </g:link>
+                ${crmUser.enabled ? '' : '<i class="icon-ban-circle"></i>'}
+            </td>
 
-                </tr>
-            </g:each>
-            </tbody>
-        </table>
+            <td>${fieldValue(bean: crmUser, field: "name")}</td>
+            <td>${fieldValue(bean: crmUser, field: "company")}</td>
+            <td>${fieldValue(bean: crmUser, field: "email")}</td>
+            <td>${fieldValue(bean: crmUser, field: "postalCode")}</td>
+            <td>${fieldValue(bean: crmUser, field: "campaign")}</td>
 
-        <crm:paginate total="${totalCount}"/>
+        </tr>
+    </g:each>
+    </tbody>
+</table>
 
-        <div class="form-actions btn-toolbar">
-            <crm:selectionMenu visual="primary"/>
-        </div>
-    </div>
+<crm:paginate total="${totalCount}"/>
 
-    <div class="span3">
-        <crm:submenu/>
-    </div>
-
+<div class="form-actions btn-toolbar">
+    <crm:selectionMenu visual="primary"/>
 </div>
 
 </body>
