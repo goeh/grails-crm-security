@@ -123,27 +123,27 @@
                                     <tr>
                                         <td>Arkivplats</td>
                                         <td>n/a</td>
-                                        <td>${crmAccount.getOption('maxQuota') ?: 0} GB</td>
+                                        <td>${crmAccount.getItem('crmContent')?.quantity ?: 0} GB</td>
                                     </tr>
                                     <tr>
                                         <td>Antal vyer</td>
                                         <td>${crmAccount.tenants.size()} st</td>
-                                        <td>${crmAccount.getOption('maxTenants') ?: 0} st</td>
+                                        <td>${crmAccount.getItem('crmTenant')?.quantity ?: 1} st</td>
                                     </tr>
                                     <tr>
                                         <td>Antal administratörer</td>
-                                        <td>${roles.admin?.size() ?: 0}</td>
-                                        <td>${crmAccount.getOption('maxAdmins') ?: 0}</td>
+                                        <td>${roles.admin?.size() ?: 0} st</td>
+                                        <td>${crmAccount.getItem('crmAdmin')?.quantity ?: 1} st</td>
                                     </tr>
                                     <tr>
                                         <td>Antal användare</td>
-                                        <td>${roles.user?.size() ?: 0}</td>
-                                        <td>${crmAccount.getOption('maxUsers') ?: 0}</td>
+                                        <td>${roles.user?.size() ?: 0} st</td>
+                                        <td>${crmAccount.getItem('crmUser')?.quantity ?: 0} st</td>
                                     </tr>
                                     <tr>
                                         <td>Antal gäster</td>
-                                        <td>${roles.guest?.size() ?: 0}</td>
-                                        <td>${crmAccount.getOption('maxGuests') ?: 0}</td>
+                                        <td>${roles.guest?.size() ?: 0} st</td>
+                                        <td>${crmAccount.getItem('crmGuest')?.quantity ?: 0} st</td>
                                     </tr>
                                     </tbody>
                                     </thead>
@@ -162,6 +162,12 @@
                     <crm:button type="link" mapping="crm-account-store" visual="success"
                                 icon="icon-shopping-cart icon-white"
                                 label="crmAccount.button.features.label"/>
+
+                    <crm:isAllowedMoreTenants>
+                        <crm:button type="link" controller="crmTenant" action="create" visual="success"
+                                    icon="icon-file icon-white"
+                                    label="crmTenant.button.create.label"/>
+                    </crm:isAllowedMoreTenants>
                 </div>
             </div>
 

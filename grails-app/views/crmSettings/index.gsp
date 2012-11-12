@@ -3,12 +3,12 @@
 <html>
 <head>
     <meta name="layout" content="main">
-    <title><g:message code="crmSettings.title" args="[cmd.name]" default="Settings"/></title>
+    <title><g:message code="crmSettings.index.title" args="[cmd.name]" default="Settings"/></title>
 </head>
 
 <body>
 
-<crm:header title="crmSettings.title" subtitle="${cmd.name.encodeAsHTML()}" args="[cmd.name]"/>
+<crm:header title="crmSettings.index.title" subtitle="${cmd.name.encodeAsHTML()}" args="[cmd.name]"/>
 
 <g:hasErrors bean="${cmd}">
     <crm:alert class="alert-error">
@@ -27,8 +27,6 @@
 
         <ul class="nav nav-tabs">
             <li class="active"><a href="#user" data-toggle="tab"><g:message code="crmSettings.tab.user.label"/></a></li>
-            <li><a href="#misc" data-toggle="tab"><g:message code="crmSettings.tab.misc.label"/><crm:countIndicator
-                    count="${roles.size()}"/></a></li>
             <crm:pluginViews location="tabs" var="view">
                 <crm:pluginTab id="${view.id}" label="${view.label}" count="${view.model?.totalCount}"/>
             </crm:pluginViews>
@@ -111,48 +109,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <div class="tab-pane" id="misc">
-
-                <table class="table table-bordered">
-                    <thead>
-                    <tr>
-                        <th><g:message code="crmTenant.label" default="Tenant"/></th>
-                        <th><g:message code="crmAccount.user.label" default="Owner"/></th>
-                        <th><g:message code="crmRole.label" default="Role"/></th>
-                        <th><g:message code="crmRole.expires.label" default="Expires"/></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <g:each in="${roles}" var="role">
-                        <tr>
-                            <g:set var="tenant"
-                                   value="${CrmTenant.get(role.role.tenantId)}"/>
-                            <td>${tenant.encodeAsHTML()}</td>
-                            <td>${tenant.account.user.encodeAsHTML()}</td>
-                            <td>${message(code: 'crmRole.role.' + role.toString() + '.label', default: role.toString())}</td>
-                            <td>
-                                <g:if test="${role.expires}">
-                                    ${formatDate(date: role.expires, type: 'date')}
-                                    <g:set var="today" value="${new Date()}"/>
-                                    <div>
-                                        <g:if test="${role.expires >= today}">
-                                            (<g:message code="default.days.left.message"
-                                                        args="${[role.expires - today]}"
-                                                        default="{0} days left"/>)
-                                        </g:if>
-                                        <g:else>
-                                            (<g:message code="crmTenant.expires.expired" default="Closed"/>)
-                                        </g:else>
-                                    </div>
-                                </g:if>
-                            </td>
-                        </tr>
-                    </g:each>
-                    </tbody>
-                </table>
-
             </div>
 
             <crm:pluginViews location="tabs" var="view">

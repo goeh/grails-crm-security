@@ -23,7 +23,7 @@ class CrmSecurityUrlMappings {
             action = 'index'
         }
         // CrmSettingsController
-        name 'crm-settings': "/settings" {
+        name 'crm-user-settings': "/settings" {
             controller = 'crmSettings'
             action = 'index'
         }

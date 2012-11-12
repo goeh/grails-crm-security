@@ -2,9 +2,14 @@
 <html>
 <head>
     <meta name="layout" content="main"/>
-    <g:set var="entityName" value="${message(code: 'crmTenant.label', default: 'Account')}"/>
+    <g:set var="entityName" value="${message(code: 'crmTenant.label', default: 'Tenant')}"/>
     <title><g:message code="crmTenant.create.title" subtitle="crmTenant.create.subtitle"
-                      args="[entityName, crmUser.name]" default="Create Account"/></title>
+                      args="[entityName, crmUser.name]" default="Create Tenant"/></title>
+    <style type="text/css">
+    .feature-body {
+        min-height: 120px;
+    }
+    </style>
 </head>
 
 <body>
@@ -23,46 +28,78 @@
     </crm:alert>
 </g:hasErrors>
 
-<g:form action="create">
+<g:form action="create" class="form-inline">
 
     <div class="row-fluid">
-        <div class="span6">
+        <div class="span8">
 
             <div class="row-fluid">
-                <div class="span6">
-                    <div class="control-group">
-                        <label class="control-label"><g:message code="crmTenant.name.label"/></label>
+                <div class="control-group">
+                    <label class="control-label"><g:message code="crmTenant.name.label"/></label>
 
-                        <div class="controls">
-                            <g:textField name="name" maxlength="40" autofocus="" required="" value="${crmTenant.name}"
-                                         placeholder="${message(code: 'crmTenant.name.placeholder')}"/>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="span6">
-                    <div class="control-group">
-                        <label class="control-label"><g:message code="crmUser.defaultTenant.label"/></label>
-
-                        <div class="controls">
-                            <label class="checkbox">
-                                <g:checkBox name="defaultTenant" value="true" checked="${!crmUser.defaultTenant}"/>
-                                <g:message code="crmUser.defaultTenant.help"/>
-                            </label>
-                        </div>
+                    <div class="controls">
+                        <g:textField name="name" maxlength="40" autofocus="" required="" value="${crmTenant.name}"
+                                     placeholder="${message(code: 'crmTenant.name.placeholder')}"/>
+                        <label class="checkbox">
+                            <g:checkBox name="defaultTenant" value="true" checked="${!crmUser.defaultTenant}"/>
+                            <g:message code="crmUser.defaultTenant.help"/>
+                        </label>
                     </div>
                 </div>
             </div>
 
-            <g:set var="availableFeatures" value="${allFeatures.findAll {!it.hidden}.sort {it.name}}"/>
-            <g:if test="${availableFeatures}">
-                <h3><g:message code="crmTenant.features.select.title"/></h3>
+            <hr/>
 
-                <g:render template="features" model="${[result: availableFeatures]}"/>
-            </g:if>
+            <g:set var="availableFeatures" value="${allFeatures.findAll { !it.hidden }.sort { it.name }}"/>
+
+            <g:each in="${availableFeatures.collate(3)}" var="row">
+                <div class="row-fluid">
+                    <ul class="thumbnails">
+                        <g:each in="${row}" var="f">
+                            <li class="span4">
+                                <div class="thumbnail">
+
+                                    <div class="feature-body">
+                                        <h5 class="center">
+                                            ${message(code: 'feature.' + f.name + '.label', default: f.name)}
+                                        </h5>
+
+                                        <p>${message(code: 'feature.' + f.name + '.description', default: f.description)}</p>
+                                    </div>
+
+                                    <g:set var="readme" value="${false}"/>
+
+                                    <div class="form-actions" style="margin-bottom: 0;">
+                                        <g:if test="${f.required}">
+                                            <input type="hidden" id="feature-${f.name}-required" name="features"
+                                                   value="${f.name}"/>
+                                            <label class="checkbox">
+                                                <g:checkBox id="feature-${f.name}-checkbox" name="feature"
+                                                            value="${f.name}"
+                                                            disabled="disabled"
+                                                            checked="${true}"/>
+                                                Aktivera funktionen
+                                            </label>
+                                        </g:if>
+                                        <g:else>
+                                            <label class="checkbox">
+                                                <g:checkBox id="feature-${f.name}-checkbox" name="features"
+                                                            value="${f.name}"
+                                                            checked="${(crmTenant.id == null) || f.required || features?.contains(f.name)}"/>
+                                                Aktivera funktionen
+                                            </label>
+                                        </g:else>
+                                    </div>
+                                </div>
+                            </li>
+                        </g:each>
+                    </ul>
+                </div>
+            </g:each>
+
         </div>
 
-        <div class="span6">
+        <div class="span4">
             <tt:html name="account-create-help"></tt:html>
         </div>
     </div>

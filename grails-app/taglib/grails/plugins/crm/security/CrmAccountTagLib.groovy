@@ -27,7 +27,7 @@ class CrmAccountTagLib {
     def isAllowedMoreTenants = {attrs, body->
         def account = crmSecurityService.getCurrentAccount()
         if (account) {
-            def max = account?.getOption('maxTenants') ?: 0
+            def max = account.getItem('crmTenant')?.quantity ?: 1
             def size = account.tenants?.size() ?: 0
             if(size < max) {
                 out << body()

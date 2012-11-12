@@ -30,7 +30,6 @@ import grails.plugins.crm.core.TenantUtils
 class CrmTenant {
 
     // Long id of this account will be used as tenantId for all instances created by this tenant.
-    //java.sql.Date expires
     String locale
     String currency
     String name

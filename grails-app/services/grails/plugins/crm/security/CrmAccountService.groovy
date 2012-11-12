@@ -45,6 +45,18 @@ class CrmAccountService {
         return false
     }
 
+    CrmAccountItem getItem(CrmAccount account, String productId) {
+        account.items?.find{it.productId == productId}
+    }
+
+    CrmAccountItem updateItem(CrmAccount account, String productId, Integer quantity) {
+        def item = account.items?.find{it.productId == productId}
+        if (item) {
+            item.quantity = quantity
+        }
+        return item
+    }
+
     CrmAccountItem addItem(CrmAccount account, String productId, Integer quantity = null) {
         if (quantity == null) {
             quantity = 1

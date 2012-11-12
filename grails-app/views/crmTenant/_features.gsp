@@ -11,7 +11,7 @@
             </g:if>
             <g:else>
                 <g:checkBox id="feature-${f.name}-checkbox" name="features" value="${f.name}"
-                            checked="${f.required || features?.contains(f.name)}"/>
+                            checked="${(crmTenant.id == null) || f.required || features?.contains(f.name)}"/>
             </g:else>
 
             ${message(code: 'feature.' + f.name + '.label', default: f.name)}

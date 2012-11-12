@@ -26,7 +26,7 @@ import javax.servlet.http.HttpServletResponse
  */
 class CrmTenantAdminController {
 
-    private static final List TENANT_BIND_WHITELIST = ['name', 'expires']
+    private static final List TENANT_BIND_WHITELIST = ['name']
 
     def crmSecurityService
     def crmInvitationService
@@ -37,9 +37,11 @@ class CrmTenantAdminController {
         def userStats = [:]
         tenantStats.total = CrmTenant.count()
         tenantStats.active = CrmTenant.createCriteria().count() {
-            or {
-                isNull('expires')
-                ge('expires', new java.sql.Date(new Date().clearTime().time))
+            account {
+                or {
+                    isNull('expires')
+                    ge('expires', new java.sql.Date(new Date().clearTime().time))
+                }
             }
         }
         userStats.total = CrmUser.count()

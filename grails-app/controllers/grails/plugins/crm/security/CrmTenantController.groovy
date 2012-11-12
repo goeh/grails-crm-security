@@ -56,7 +56,7 @@ class CrmTenantController {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
             return
         }
-        [crmUser: user, crmTenantList: crmSecurityService.tenants]
+        [crmUser: user, crmAccount: crmSecurityService.getCurrentAccount(), crmTenantList: crmSecurityService.tenants]
     }
 
     def activate(Long id) {
@@ -96,7 +96,7 @@ class CrmTenantController {
             return
         }
 
-        def max = crmAccount?.getOption('maxTenants') ?: 0
+        def max = crmAccount.getItem('crmTenant')?.quantity ?: 1
         def size = crmAccount.tenants?.size() ?: 0
         if (size >= max) {
             flash.warning = "Max number of tenants ($max) reached for this account"
@@ -104,7 +104,7 @@ class CrmTenantController {
             return
         }
 
-        def crmTenant = new CrmTenant(acount: crmAccount)
+        def crmTenant = new CrmTenant(account: crmAccount)
 
         bindData(crmTenant, params, [include: ['name', 'options']])
 
@@ -151,7 +151,7 @@ class CrmTenantController {
                 break
         }
 
-        def availableFeature = crmAccountService.getAccountFeatures(crmAccount)
+        def availableFeatures = crmAccountService.getAccountFeatures(crmAccount)
 
         return [crmUser: crmUser, crmTenant: crmTenant, features: [], allFeatures: availableFeatures]
     }
@@ -170,24 +170,17 @@ class CrmTenantController {
             return
         }
 
-        def invitations = crmInvitationService ? crmInvitationService.getInvitationsFor(crmTenant, crmTenant.id) : []
-        def allFeatures = crmFeatureService.applicationFeatures
-        def features = crmFeatureService.getFeatures(crmTenant.id)
-        def existingFeatureNames = features*.name
-        def moreFeatures = allFeatures.findAll {
-            if (it.hidden || existingFeatureNames.contains(it.name)) {
-                return false
-            }
-            return true
-        }
+        def user = crmSecurityService.currentUser
+        def crmAccount = crmTenant.account
+        def accountFeatures = crmAccountService.getAccountFeatures(crmAccount)
+        def tenantFeatures = crmFeatureService.getFeatures(crmTenant.id)
         def showCosts = crmTenant.getOption('agreement.costs')
         def partner2 = crmTenant.getOption('agreement.partner2')
 
         switch (request.method) {
             case 'GET':
-                return [crmTenant: crmTenant, user: crmSecurityService.currentUser,
-                        permissions: crmSecurityService.getTenantPermissions(crmTenant.id),
-                        showCosts: showCosts, partner2: partner2, invitationList: invitations, features: features, moreFeatures: moreFeatures]
+                return [crmTenant: crmTenant, user: user,
+                        showCosts: showCosts, partner2: partner2, installed: tenantFeatures*.name, features: accountFeatures]
             case 'POST':
                 if (params.version) {
                     def version = params.version.toLong()
@@ -195,7 +188,9 @@ class CrmTenantController {
                         crmTenant.errors.rejectValue('version', 'crmTenant.optimistic.locking.failure',
                                 [message(code: 'crmTenant.label', default: 'Account')] as Object[],
                                 "Another user has updated this account while you were editing")
-                        render view: 'edit', model: [crmTenant: crmTenant, user: crmSecurityService.currentUser]
+                        render view: 'edit', model: [crmTenant: crmTenant, user: user,
+                                showCosts: showCosts, partner2: partner2,
+                                installed: tenantFeatures, features: accountFeatures]
                         return
                     }
                 }
@@ -203,9 +198,9 @@ class CrmTenantController {
                 bindData(crmTenant, params, [include: TENANT_BIND_WHITELIST])
 
                 if (!crmTenant.save(flush: true)) {
-                    render view: 'edit', model: [crmTenant: crmTenant, user: crmSecurityService.currentUser,
-                            permissions: crmSecurityService.getTenantPermissions(crmTenant.id),
-                            showCosts: showCosts, partner2: partner2, invitationList: invitations, features: features, moreFeatures: moreFeatures]
+                    render view: 'edit', model: [crmTenant: crmTenant, user: user,
+                            showCosts: showCosts, partner2: partner2,
+                            installed: tenantFeatures, features: accountFeatures]
                     return
                 }
 

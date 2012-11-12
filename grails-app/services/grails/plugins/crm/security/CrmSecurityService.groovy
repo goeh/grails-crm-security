@@ -200,7 +200,7 @@ class CrmSecurityService {
      * @param map with products to add to the account
      * @return the created CrmAccount instance
      */
-    CrmAccount createAccount(Map<String, Object> params = [:], List<String> products = []) {
+    CrmAccount createAccount(Map<String, Object> params = [:], Object products = null) {
         def user = params.user
         if (!user) {
             def username = crmSecurityDelegate.getCurrentUser()
@@ -250,8 +250,16 @@ class CrmSecurityService {
             account.setOption(key, value)
         }
 
-        for (p in products) {
-            account.addToItems(productId: p, quantity: 1)
+        if (products) {
+            if (products instanceof Map) {
+                products.each{p, n ->
+                    account.addToItems(productId: p, quantity: n)
+                }
+            } else {
+                for (p in products) {
+                    account.addToItems(productId: p, quantity: 1)
+                }
+            }
         }
 
         account.save(failOnError: true, flush: true)
@@ -405,13 +413,6 @@ class CrmSecurityService {
         }
         if (properties.name) {
             crmTenant.name = properties.name
-        }
-        def expires = properties.expires
-        if (expires) {
-            if (!(expires instanceof Date)) {
-                expires = DateUtils.parseSqlDate(expires.toString())
-            }
-            crmTenant.expires = expires
         }
         def parent = properties.parent
         if (parent) {
@@ -883,12 +884,8 @@ class CrmSecurityService {
         def tenant = CrmTenant.get(role.tenantId)
         def account = tenant.account
         def count = CrmUserRole.countByRole(role)
-        def maxProperty = getMaxProperty(role.name)
-        return [count, maxProperty ? account.getOption(maxProperty) : null]
-    }
-
-    private String getMaxProperty(String roleName) {
-        [guest: 'maxGuests', user: 'maxUsers', admin: 'maxAdmins'].get(roleName)
+        def maxProperty = 'crm' + role.name[0].toUpperCase() + role.name.substring(1)
+        return [count, account.getItem(maxProperty)?.quantity ?: 0]
     }
 
     void addPermissionToRole(String permission, String rolename, Long tenant = TenantUtils.getTenant()) {

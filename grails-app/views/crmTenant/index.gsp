@@ -32,13 +32,16 @@
             </tt:html>
         </g:else>
 
-
-        <crm:isAllowedMoreTenants>
-            <div class="form-actions">
+        <div class="form-actions">
+            <crm:isAllowedMoreTenants>
                 <crm:button type="link" action="create" visual="success" icon="icon-file icon-white"
                             label="crmTenant.button.create.label"/>
-            </div>
-        </crm:isAllowedMoreTenants>
+            </crm:isAllowedMoreTenants>
+            <g:if test="${crmAccount}">
+                <crm:button type="link" controller="crmAccount" action="index" icon="icon-briefcase"
+                            label="crmAccount.index.label"/>
+            </g:if>
+        </div>
 
     </div>
 
