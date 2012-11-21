@@ -286,14 +286,9 @@ class CrmTenantController {
                 break
         }
 
-        def invitations = crmInvitationService ? crmInvitationService.getInvitationsFor(crmTenant, crmTenant.id) : []
-        def currentUser = crmSecurityService.getUser()
-        def guestUsage = crmSecurityService.getRoleUsage('guest', id)
-        def userUsage = crmSecurityService.getRoleUsage('user', id)
-        def adminUsage = crmSecurityService.getRoleUsage('admin', id)
-
-        return [me: currentUser, crmTenant: crmTenant, permissions: crmSecurityService.getTenantPermissions(crmTenant.id),
-                invitations: invitations, guestUsage: guestUsage, userUsage: userUsage, adminUsage: adminUsage, errorBean: error]
+        return [me: crmSecurityService.getUser(), crmAccount: crmSecurityService.getCurrentAccount(),
+                crmTenant: crmTenant, errorBean: error,
+                permissions: crmSecurityService.getTenantPermissions(crmTenant.id)]
     }
 
     def reset(Long id) {
