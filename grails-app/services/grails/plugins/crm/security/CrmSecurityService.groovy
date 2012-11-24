@@ -175,9 +175,13 @@ class CrmSecurityService {
         if (!user) {
             throw new IllegalArgumentException("[$username] is not a valid user")
         }
-        if (user.accounts) {
-            throw new IllegalArgumentException("A user [${user.username}] with active accounts ${user.accounts} cannot be deleted")
+        def accounts = CrmAccount.findAllByUser(user)
+        for (a in accounts) {
+            if (a.tenants) {
+                throw new IllegalArgumentException("A user [${user.username}] with active accounts [${a}] cannot be deleted")
+            }
         }
+        accounts*.delete() // Accounts without tenants are ok to delete.
 
         def userInfo = user.dao
         user.delete(flush: true)
@@ -252,7 +256,7 @@ class CrmSecurityService {
 
         if (products) {
             if (products instanceof Map) {
-                products.each{p, n ->
+                products.each { p, n ->
                     account.addToItems(productId: p, quantity: n)
                 }
             } else {

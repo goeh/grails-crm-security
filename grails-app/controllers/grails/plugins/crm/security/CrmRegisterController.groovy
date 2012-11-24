@@ -27,12 +27,7 @@ class CrmRegisterController {
 
     def grailsApplication
     def simpleCaptchaService
-    def textTemplateService
-
     def crmSecurityService
-
-    LinkGenerator grailsLinkGenerator
-
 
     def index(RegisterUserCommand cmd) {
 
@@ -50,10 +45,7 @@ class CrmRegisterController {
                     try {
                         def props = cmd.toMap()
                         props.ip = request.remoteAddr // Save IP address if we need to track abuse.
-                        def user = crmSecurityService.createUser(props)
-                        TenantUtils.withTenant(1) {
-                            sendVerificationEmail(user.dao)
-                        }
+                        crmSecurityService.createUser(props)
                         success = true
                     } catch (Exception e) {
                         log.error("Could not create user ${cmd.name} (${cmd.username}) <${cmd.email}>", e)
@@ -81,39 +73,6 @@ class CrmRegisterController {
         }
 
         return [cmd: cmd]
-    }
-
-    private void sendVerificationEmail(params) {
-        def config = grailsApplication.config.crm.register.email
-        def binding = params as Map
-        binding.url = grailsLinkGenerator.link(controller: controllerName, action: 'confirm', id: params.guid, absolute: true)
-        def bodyText = textTemplateService.applyTemplate("register-verify-email", "text/plain", binding)
-        def bodyHtml = textTemplateService.applyTemplate("register-verify-email", "text/html", binding)
-        if (!(bodyText || bodyHtml)) {
-            throw new RuntimeException("Template not found: [name=register-verify-email]")
-        }
-        sendMail {
-            if (bodyText && bodyHtml) {
-                multipart true
-            }
-            if (config.from) {
-                from config.from
-            }
-            to params.email
-            if (config.cc) {
-                cc config.cc
-            }
-            if (config.bcc) {
-                bcc config.bcc
-            }
-            subject config.subject ?: "Confirm registration"
-            if (bodyText) {
-                text bodyText
-            }
-            if (bodyHtml) {
-                html bodyHtml
-            }
-        }
     }
 
     def verify() {
