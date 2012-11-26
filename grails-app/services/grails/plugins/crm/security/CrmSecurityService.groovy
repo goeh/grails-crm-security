@@ -181,7 +181,10 @@ class CrmSecurityService {
                 throw new IllegalArgumentException("A user [${user.username}] with active accounts [${a}] cannot be deleted")
             }
         }
-        accounts*.delete() // Accounts without tenants are ok to delete.
+        // Accounts without tenants are ok to delete.
+        for(a in accounts) {
+            deleteAccount(a.id)
+        }
 
         def userInfo = user.dao
         user.delete(flush: true)
@@ -271,6 +274,27 @@ class CrmSecurityService {
         event(for: "crm", topic: "accountCreated", data: account.dao)
 
         return account
+    }
+
+    boolean deleteAccount(Long id) {
+
+        def crmAccount = CrmAccount.get(id)
+        if (!crmAccount) {
+            throw new CrmException('crmAccount.not.found.message', ['Account', id])
+        }
+        if (crmAccount.tenants) {
+            throw new CrmException('crmAccount.not.empty.message', ['Account', id])
+        }
+
+        def accountInfo = crmAccount.dao
+
+        crmAccount.delete(flush: true)
+
+        // Use platform-core events to broadcast that the account was deleted.
+        // Receivers should remove any data associated with the account.
+        event(for: "crm", topic: "accountDeleted", data: accountInfo)
+
+        return true
     }
 
     List<CrmAccount> getAccounts(String username = null) {
@@ -567,7 +591,7 @@ class CrmSecurityService {
 
         // Make sure the account is owned by current user.
         def currentUser = getCurrentUser()
-        if (account.user != currentUser) {
+        if (crmAccount.user != currentUser) {
             throw new CrmException('crmTenant.permission.denied', ['Tenant', crmTenant.name])
         }
 

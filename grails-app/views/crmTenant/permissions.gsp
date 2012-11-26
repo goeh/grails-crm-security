@@ -149,15 +149,15 @@
     </table>
 
     <div class="form-actions">
-        <crm:hasFeature feature="crmInvitation">
-            <g:if test="${saveButtonNeeded}">
-                <crm:button action="permissions" visual="success" icon="icon-ok icon-white"
-                            label="crmUserRole.button.update.label" permission="crmTenant:edit"/>
-            </g:if>
+        <g:if test="${saveButtonNeeded}">
+            <crm:button action="permissions" visual="success" icon="icon-ok icon-white"
+                        label="crmUserRole.button.update.label" permission="crmTenant:edit"/>
+        </g:if>
+        <crm:isAllowedMoreInvitations>
             <crm:button type="url" visual="primary" icon="icon-share-alt icon-white" data-toggle="modal"
                         href="#modal-share-account"
-                        label="crmTenant.button.share.label" permission="crmTenant:share"/>
-        </crm:hasFeature>
+                        label="crmTenant.button.share.label" permission="crmTenant:share:${crmTenant.id}"/>
+        </crm:isAllowedMoreInvitations>
         <g:if test="${crmAccount}">
             <crm:button type="link" controller="crmAccount" action="index" icon="icon-briefcase"
                         label="crmAccount.index.label"/>

@@ -33,20 +33,25 @@
 
             <ul class="dropdown-menu">
                 <g:if test="${readme}">
-                    <a href="${crm.createResourceLink(resource: readme)}" class="crm-readme">Läs mer...</a>
+                    <li><a href="${crm.createResourceLink(resource: readme)}" class="crm-readme">Läs mer...</a></li>
                 </g:if>
                 <g:if test="${installed.contains(f.name) && !f.required}">
                     <crm:hasPermission permission="crmFeature:install:${crmTenant.id}">
-                        <g:link controller="crmFeature" action="uninstall" params="${[id: crmTenant.id, name: f.name]}"
-                                onclick="return confirm('Är du säker på att du vill avaktivera funktionen ${f.name}?')">
-                            Avaktivera
-                        </g:link>
+                        <li>
+                            <g:link controller="crmFeature" action="uninstall"
+                                    params="${[id: crmTenant.id, name: f.name]}"
+                                    onclick="return confirm('Är du säker på att du vill avaktivera funktionen ${f.name}?')">
+                                Avaktivera
+                            </g:link>
+                        </li>
                     </crm:hasPermission>
                 </g:if>
                 <g:if test="${!installed.contains(f.name)}">
-                    <g:link controller="crmFeature" action="install" params="${[id: crmTenant.id, name: f.name]}">
-                        Aktivera
-                    </g:link>
+                    <li>
+                        <g:link controller="crmFeature" action="install" params="${[id: crmTenant.id, name: f.name]}">
+                            Aktivera
+                        </g:link>
+                    </li>
                 </g:if>
             </ul>
 

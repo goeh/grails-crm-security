@@ -121,9 +121,11 @@
                 <div class="form-actions">
                     <crm:button visual="primary" icon="icon-ok icon-white" label="crmTenant.button.update.label"
                                 permission="crmTenant:edit:${crmTenant.id}"/>
+                    <%--
                     <crm:button action="reset" visual="danger" icon="icon-repeat icon-white"
                                 label="crmTenant.button.reset.label" permission="crmTenant:reset:${crmTenant.id}"
                                 confirm="crmTenant.button.reset.confirm.message"/>
+                    --%>
                     <crm:button type="link" icon="icon-remove" label="crmTenant.button.cancel.label"
                                 action="index"/>
                     <crm:hasPermission permission="crmTenant:delete:${crmTenant.id}">
