@@ -76,6 +76,24 @@ class CrmSecurityService {
         crmSecurityDelegate.runAs(username, closure)
     }
 
+    /**
+     * Execute a piece of code as a specific user in a specific tenant
+     *
+     * @param username username
+     * @param tenant tenant id
+     * @param closure the work to perform
+     * @return whatever the closure returns
+     */
+    def runAs(String username, Long tenant, Closure closure) {
+        def user = CrmUser.findByUsernameAndStatus(username, CrmUser.STATUS_ACTIVE, [cache: true])
+        if (!user) {
+            throw new IllegalArgumentException("[$username] is not a valid user")
+        }
+        crmSecurityDelegate.runAs(username) {
+            TenantUtils.withTenant(tenant, closure)
+        }
+    }
+
     private CrmUser getEnabledUser(String username) {
         CrmUser.findByUsernameAndStatus(username, CrmUser.STATUS_ACTIVE, [cache: true])
     }

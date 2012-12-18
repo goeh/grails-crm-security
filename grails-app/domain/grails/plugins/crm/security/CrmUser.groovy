@@ -71,7 +71,7 @@ class CrmUser {
         permissions cascade: 'all-delete-orphan'
     }
 
-    static transients = ['dao', 'enabled', 'blocked']
+    static transients = ['dao', 'created', 'enabled', 'blocked']
 
     static searchable = {
         only = ['username', 'email', 'name', 'company']
@@ -94,6 +94,10 @@ class CrmUser {
      */
     String toString() {
         username.toString()
+    }
+
+    boolean isCreated() {
+        status == STATUS_NEW
     }
 
     boolean isEnabled() {
@@ -140,7 +144,7 @@ class CrmUser {
      * @return options
      */
     private Map<String, Object> getOptionsMap() {
-        options.inject([:]) {map, o ->
+        options.inject([:]) { map, o ->
             map[o.key] = o.value
             map
         }
@@ -150,7 +154,7 @@ class CrmUser {
         if (value == null) {
             removeOption(key)
         } else {
-            def o = options.find {it.key == key}
+            def o = options.find { it.key == key }
             if (o) {
                 o.value = value
             } else {
@@ -161,14 +165,14 @@ class CrmUser {
     }
 
     def getOption(String key = null) {
-        if(key == null) {
+        if (key == null) {
             return getOptionsMap()
         }
-        return options.find {it.key == key}?.value
+        return options.find { it.key == key }?.value
     }
 
     boolean removeOption(String key) {
-        def o = options.find {it.key == key}
+        def o = options.find { it.key == key }
         if (o) {
             removeFromOptions(o)
             return true

@@ -5,6 +5,7 @@
     <meta name="layout" content="main">
     <g:set var="entityName" value="${message(code: 'crmTenant.label', default: 'Account')}"/>
     <title><g:message code="crmTenant.permissions.title" args="[entityName]"/></title>
+    <r:require module="datepicker"/>
     <r:script>
         $(document).ready(function () {
             $('.date').datepicker({weekStart: 1});

@@ -82,9 +82,16 @@ class CrmRegisterController {
     def confirm(String id) {
         def user = CrmUser.findByGuid(id)
         if (user) {
-            def userInfo = crmSecurityService.updateUser(user.username, [status: CrmUser.STATUS_ACTIVE])
-            def targetUri = grailsApplication.config.crm.register.welcome.url ?: "/welcome"
-            return [user: userInfo, targetUri: targetUri]
+            if(user.created) {
+                def userInfo = crmSecurityService.updateUser(user.username, [status: CrmUser.STATUS_ACTIVE])
+                def targetUri = grailsApplication.config.crm.register.welcome.url ?: "/welcome"
+                return [user: userInfo, targetUri: targetUri]
+            } else if(user.blocked) {
+                response.sendError(HttpServletResponse.SC_FORBIDDEN)
+            } else {
+                // Already active.
+                redirect(mapping: 'start')
+            }
         } else {
             response.sendError(HttpServletResponse.SC_NOT_FOUND)
         }

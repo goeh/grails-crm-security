@@ -64,9 +64,11 @@ class CrmSecurityTagLib {
     }
 
     def tenant = { attrs, body ->
-        def tenant = crmSecurityService?.getCurrentTenant()
-        if (tenant) {
-            out << body(tenant.dao)
+        CrmTenant.withTransaction {
+            def tenant = crmSecurityService?.getCurrentTenant()
+            if (tenant) {
+                out << body(tenant.dao)
+            }
         }
     }
 
