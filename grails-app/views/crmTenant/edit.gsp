@@ -128,7 +128,7 @@
                     --%>
                     <crm:button type="link" icon="icon-remove" label="crmTenant.button.cancel.label"
                                 action="index"/>
-                    <crm:hasPermission permission="crmTenant:delete:${crmTenant.id}">
+                    <crm:hasPermission tenant="${crmTenant.id}" permission="crmTenant:delete:${crmTenant.id}">
                         <g:link action="delete" id="${crmTenant.id}" class="text-error" style="margin-left: 10px;"
                                 onclick="return confirm('${message(code: 'crmTenant.button.delete.confirm.message', default: 'Are you sure?')}')">
                             <g:message code="crmTenant.button.delete.label" default="Delete"/>

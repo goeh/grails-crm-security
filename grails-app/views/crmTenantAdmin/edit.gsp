@@ -82,29 +82,6 @@
                                          disabled="disabled" class="input-medium"/>
                         </f:field>
 
-                        <f:field property="expires">
-                            <div class="input-append date"
-                                 data-date="${formatDate(format: 'yyyy-MM-dd', date: crmTenant.expires ?: new Date())}">
-                                <g:textField name="expires"
-                                             class="input-medium" size="10" placeholder="YYYY-MM-DD"
-                                             value="${formatDate(type: 'date', date: crmTenant.expires, style: 'short')}"/><span
-                                    class="add-on"><i class="icon-th"></i></span>
-                            </div>
-                            <g:if test="${crmTenant.expires}">
-                                <g:set var="today" value="${new Date()}"/>
-                                <div>
-                                    <g:if test="${crmTenant.expires >= today}">
-                                        (<g:message code="default.days.left.message"
-                                                    args="${[crmTenant.expires - today]}"
-                                                    default="{0} days left"/>)
-                                    </g:if>
-                                    <g:else>
-                                        (<g:message code="crmTenant.expires.expired" default="Closed"/>)
-                                    </g:else>
-                                </div>
-                            </g:if>
-                        </f:field>
-
                     </div>
                 </div>
 
@@ -139,7 +116,7 @@
             <th><g:message code="crmUser.label" default="User"/></th>
             <th><g:message code="crmRole.label" default="Role"/></th>
             <th>Mål</th>
-            <th><g:message code="crmTenant.expires.label" default="Expires"/></th>
+            <th><g:message code="crmAccount.expires.label" default="Expires"/></th>
             <th>Status</th>
             <th></th>
         </tr>
@@ -147,7 +124,7 @@
         <tbody>
         <g:each in="${permissions}" var="perm" status="i">
 
-            <g:set var="expires" value="${perm.expires ?: crmTenant.expires}"/>
+            <g:set var="expires" value="${perm.expires ?: crmAccount.expires}"/>
             <g:set var="active"
                    value="${expires == null || expires >= new java.sql.Date(new Date().clearTime().time)}"/>
 

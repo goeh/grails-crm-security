@@ -88,7 +88,15 @@ class CrmSecurityTagLib {
         if (!perm) {
             throwTagError("Tag [hasPermission] is missing required attribute [permission]")
         }
-        if (crmSecurityService?.isPermitted(perm)) {
+        def ok = false
+        if (attrs.tenant) {
+            TenantUtils.withTenant(attrs.tenant) {
+                ok = crmSecurityService?.isPermitted(perm)
+            }
+        } else if (crmSecurityService?.isPermitted(perm)) {
+            ok = true
+        }
+        if (ok) {
             out << body()
         }
     }

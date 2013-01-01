@@ -74,7 +74,7 @@ class CrmTenantAdminController {
 
         switch (request.method) {
             case 'GET':
-                return [crmTenant: crmTenant, user: crmTenant.user,
+                return [crmAccount: crmTenant.account, crmTenant: crmTenant, user: crmTenant.user,
                         permissions: crmSecurityService.getTenantPermissions(crmTenant.id),
                         invitations: invitations, features: features, moreFeatures: moreFeatures,
                         guestUsage: guestUsage, userUsage: userUsage, adminUsage: adminUsage]
