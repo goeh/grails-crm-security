@@ -56,7 +56,15 @@ class CrmTenantController {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
             return
         }
-        [crmUser: user, crmAccount: crmSecurityService.getCurrentAccount(), crmTenantList: crmSecurityService.tenants]
+        def account = crmSecurityService.currentAccount
+        def tenants = crmSecurityService.tenants
+        if (!(account || tenants)) {
+            // If we have no account and no access to tenants we probably rejected an invitation.
+            // Redirect to "Create Account" page.
+            redirect(mapping: 'crm-account-create')
+        } else {
+            return [crmUser: user, crmAccount: account, crmTenantList: tenants]
+        }
     }
 
     def activate(Long id) {
@@ -288,7 +296,8 @@ class CrmTenantController {
 
         return [me: crmSecurityService.getUser(), crmAccount: crmSecurityService.getCurrentAccount(),
                 crmTenant: crmTenant, errorBean: error,
-                permissions: crmSecurityService.getTenantPermissions(crmTenant.id)]
+                permissions: crmSecurityService.getTenantPermissions(crmTenant.id),
+                invitations: crmInvitationService?.getInvitationsFor(crmTenant, crmTenant.id)]
     }
 
     def reset(Long id) {

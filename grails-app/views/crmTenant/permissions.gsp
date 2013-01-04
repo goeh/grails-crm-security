@@ -136,7 +136,7 @@
                 <td>${message(code: 'crmRole.role.' + inv.param + '.label', default: inv.param)}</td>
                 <td>${inv.reference?.encodeAsHTML()}</td>
                 <td><g:formatDate format="yyyy-MM-dd" date="${inv.dateCreated + 30}"/></td>
-                <td>Inbjudan skickad</td>
+                <td><g:message code="crmInvitation.sent.message" default="Inbjudan skickad"/></td>
                 <td style="text-align: right;"><crm:button type="link" action="deleteInvitation" id="${inv.id}"
                                                            visual="danger" class="btn-mini"
                                                            icon="icon-trash icon-white"
@@ -152,7 +152,7 @@
     <div class="form-actions">
         <g:if test="${saveButtonNeeded}">
             <crm:button action="permissions" visual="success" icon="icon-ok icon-white"
-                        label="crmUserRole.button.update.label" permission="crmTenant:edit"/>
+                        label="crmUserRole.button.update.label" permission="crmTenant:edit:${crmTenant.id}"/>
         </g:if>
         <crm:isAllowedMoreInvitations>
             <crm:button type="url" visual="primary" icon="icon-share-alt icon-white" data-toggle="modal"
