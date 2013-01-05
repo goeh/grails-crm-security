@@ -944,7 +944,7 @@ class CrmSecurityService {
         }
     }
 
-    void addPermissionToUser(String permission, String username = null, Long tenant = null) {
+    void addPermissionToUser(String permission, String username = null, Long tenant = null, Date expires = null) {
         if (!tenant) {
             tenant = TenantUtils.getTenant()
         }
@@ -967,7 +967,7 @@ class CrmSecurityService {
         if (!perm) {
             user.discard()
             user = CrmUser.lock(user.id)
-            user.addToPermissions(perm = new CrmUserPermission(tenantId: tenant, permissionsString: permission))
+            user.addToPermissions(perm = new CrmUserPermission(tenantId: tenant, expires: expires, permissionsString: permission))
             user.save(flush: true)
         }
     }

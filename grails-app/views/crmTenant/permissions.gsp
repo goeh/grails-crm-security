@@ -9,6 +9,7 @@
     <r:script>
         $(document).ready(function () {
             $('.date').datepicker({weekStart: 1});
+            $("#modal-share input:radio:first").attr('checked', 'checked');
         });
     </r:script>
 </head>
@@ -131,12 +132,13 @@
         </g:each>
 
         <g:each in="${invitations}" var="inv">
-            <tr>
+            <g:set var="ttl" value="${grailsApplication.config.crm.invitation.expires ?: 30}"/>
+            <tr class="${inv.active ? '' : 'disabled'}">
                 <td>${inv.receiver?.encodeAsHTML()}</td>
                 <td>${message(code: 'crmRole.role.' + inv.param + '.label', default: inv.param)}</td>
                 <td>${inv.reference?.encodeAsHTML()}</td>
-                <td><g:formatDate format="yyyy-MM-dd" date="${inv.dateCreated + 30}"/></td>
-                <td><g:message code="crmInvitation.sent.message" default="Inbjudan skickad"/></td>
+                <td><g:formatDate format="yyyy-MM-dd" date="${inv.dateCreated + ttl}"/></td>
+                <td>${message(code:'crmInvitation.status.' + inv.status + '.label')}</td>
                 <td style="text-align: right;"><crm:button type="link" action="deleteInvitation" id="${inv.id}"
                                                            visual="danger" class="btn-mini"
                                                            icon="icon-trash icon-white"
@@ -156,7 +158,7 @@
         </g:if>
         <crm:isAllowedMoreInvitations>
             <crm:button type="url" visual="primary" icon="icon-share-alt icon-white" data-toggle="modal"
-                        href="#modal-share-account"
+                        href="#modal-share"
                         label="crmTenant.button.share.label" permission="crmTenant:share:${crmTenant.id}"/>
         </crm:isAllowedMoreInvitations>
         <g:if test="${crmAccount}">
@@ -167,60 +169,9 @@
 
 </g:form>
 
-<div id="modal-share-account" class="modal hide">
-    <div class="modal-header">
-        <a href="#" class="close" data-dismiss="modal">&times;</a>
-
-        <h3><g:message code="crmTenant.share.title" args="${[crmTenant.name]}"/></h3>
-    </div>
-
-    <div class="well">
-        <g:form action="share">
-            <input type="hidden" name="id" value="${crmTenant.id}"/>
-
-            <div class="modal-body">
-                <p><g:message code="crmTenant.share.message" args="${[crmTenant.name]}"/></p>
-            </div>
-
-            <div class="control-group">
-                <label class="control-label">E-postadress</label>
-
-                <div class="controls">
-                    <input type="email" name="email" class="span4"
-                           placeholder="E-postadress till den du vill bjuda in..."/>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <label class="control-label">Behörighet</label>
-
-                <div class="controls">
-                    <label class="radio inline"><g:radio value="guest" name="role" checked="checked"/>Läsa</label>
-                    <label class="radio inline"><g:radio value="user" name="role"/>Ändra</label>
-                    <label class="radio inline"><g:radio value="admin" name="role"/>Administrera</label>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <label class="control-label">Meddelande (frivilligt)</label>
-
-                <div class="controls">
-                    <textarea name="msg" placeholder="Personligt meddelande..." class="span5" cols="40"
-                              rows="3"></textarea>
-                </div>
-            </div>
-
-            <div class="modal-footer">
-
-                <crm:button visual="primary" icon="icon-ok icon-white" action="share"
-                            label="crmTenant.button.share.confirm.yes" args="${[crmTenant.name]}"/>
-                <crm:button type="url" icon="icon-remove" href="#"
-                            label="crmTenant.button.share.confirm.no" args="${[crmTenant.name]}"
-                            data-dismiss="modal"/>
-            </div>
-        </g:form>
-    </div>
-</div>
+<crm:hasPlugin name="crm-invitation">
+    <g:render template="/crmInvitation/share" plugin="crm-invitation" model="${[bean: crmTenant]}"/>
+</crm:hasPlugin>
 
 </body>
 </html>

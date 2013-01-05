@@ -297,7 +297,7 @@ class CrmTenantController {
         return [me: crmSecurityService.getUser(), crmAccount: crmSecurityService.getCurrentAccount(),
                 crmTenant: crmTenant, errorBean: error,
                 permissions: crmSecurityService.getTenantPermissions(crmTenant.id),
-                invitations: crmInvitationService?.getInvitationsFor(crmTenant, crmTenant.id)]
+                invitations: crmInvitationService?.getInvitationsFor(null, crmTenant.id, true)]
     }
 
     def reset(Long id) {
@@ -394,10 +394,10 @@ class CrmTenantController {
                 if (alreadyInvited) {
                     flash.error = message(code: "crmInvitation.invite.user.message", default: "User [{1}] already have access to {0}", args: [crmTenant.name, email])
                 } else {
-                    if (crmInvitationService.getInvitationsTo(email, id)) {
+                    if (crmInvitationService.getInvitationsTo(email, id, crmTenant)) {
                         flash.error = message(code: "crmInvitation.invite.twice.message", default: "User [{0}] is already invited", args: [crmTenant.name, email])
                     } else {
-                        event(for: "crm", topic: "tenantShared", data: [id: id, email: email, role: role, message: msg, user: crmSecurityService.currentUser.username])
+                        event(for: "crmTenant", topic: "share", data: [tenant: id, id: id, email: email, role: role, message: msg, user: currentUser.username])
                         flash.success = message(code: 'crmTenant.share.success.message', args: [crmTenant.name, email, msg])
                     }
                 }
