@@ -74,11 +74,20 @@ class CrmUserController {
             redirect action: 'index'
             return
         }
+        // If this user owns an account with tenants, it cannot be deleted.
+        def deleteOk = true
+        def accounts = CrmAccount.findAllByUser(crmUser)
+        for(a in accounts) {
+            if(a.tenants) {
+                deleteOk = false
+            }
+        }
         def tenants = crmSecurityService.getTenants(crmUser.username)
 
         switch (request.method) {
             case 'GET':
-                return [crmUser: crmUser, tenantList: tenants, accountList: crmSecurityService.getAccounts(crmUser.username)]
+                return [crmUser: crmUser, tenantList: tenants,
+                        accountList: crmSecurityService.getAccounts(crmUser.username), deleteOk: deleteOk]
             case 'POST':
                 if (params.version && crmUser.version) {
                     def version = params.version.toLong()
@@ -86,7 +95,8 @@ class CrmUserController {
                         crmUser.errors.rejectValue('version', 'crmUser.optimistic.locking.failure',
                                 [message(code: 'crmUser.label', default: 'User')] as Object[],
                                 "Another user has updated this user while you were editing")
-                        render view: 'edit', model: [crmUser: crmUser, tenantList: tenants, accountList: crmSecurityService.getAccounts(crmUser.username)]
+                        render view: 'edit', model: [crmUser: crmUser, tenantList: tenants,
+                                accountList: crmSecurityService.getAccounts(crmUser.username), deleteOk: deleteOk]
                         return
                     }
                 }
@@ -94,7 +104,8 @@ class CrmUserController {
                 bindData(crmUser, params, [include: CrmUser.BIND_WHITELIST])
 
                 if (!crmUser.save(flush: true)) {
-                    render view: 'edit', model: [crmUser: crmUser, tenantList: tenants, accountList: crmSecurityService.getAccounts(crmUser.username)]
+                    render view: 'edit', model: [crmUser: crmUser, tenantList: tenants,
+                            accountList: crmSecurityService.getAccounts(crmUser.username), deleteOk: deleteOk]
                     return
                 }
                 if (params.password1) {
@@ -102,7 +113,8 @@ class CrmUserController {
                         crmSecurityService.updateUser(crmUser.username, [password: params.password1])
                     } else {
                         flash.error = message(code: 'crmSettings.password.not.equal.message', default: "Passwords were not equal")
-                        render view: 'edit', model: [crmUser: crmUser, tenantList: tenants, accountList: crmSecurityService.getAccounts(crmUser.username)]
+                        render view: 'edit', model: [crmUser: crmUser, tenantList: tenants,
+                                accountList: crmSecurityService.getAccounts(crmUser.username), deleteOk: deleteOk]
                         return
                     }
                 }
@@ -120,15 +132,16 @@ class CrmUserController {
             redirect action: 'index'
             return
         }
-
-        if (crmSecurityService.getAccounts(crmUser.username)) {
-            flash.error = message(code: 'crmUser.delete.accounts.message', args: [message(code: 'crmUser.label', default: 'User'), crmUser.toString()])
-            redirect action: 'edit', id: crmUser.id
-            return
+        def deleteOk = true
+        def accounts = CrmAccount.findAllByUser(crmUser)
+        for(a in accounts) {
+            if(a.tenants) {
+                deleteOk = false
+            }
         }
 
-        if (crmSecurityService.getTenants(crmUser.username)) {
-            flash.error = message(code: 'crmUser.delete.tenants.message', args: [message(code: 'crmUser.label', default: 'User'), crmUser.toString()])
+        if (!deleteOk) {
+            flash.error = message(code: 'crmUser.delete.accounts.message', args: [message(code: 'crmUser.label', default: 'User'), crmUser.toString()])
             redirect action: 'edit', id: crmUser.id
             return
         }

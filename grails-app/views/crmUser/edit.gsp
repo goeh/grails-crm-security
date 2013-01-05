@@ -92,12 +92,12 @@
 
         <div class="form-actions">
             <crm:button visual="primary" icon="icon-ok icon-white" label="crmUser.button.update.label"/>
-            <g:unless test="${accountList}">
+            <g:if test="${deleteOk}">
                 <crm:button action="delete" visual="danger" icon="icon-trash icon-white"
                             label="crmUser.button.delete.label"
                             confirm="crmUser.button.delete.confirm.message"
                             permission="crmUser:delete"/>
-            </g:unless>
+            </g:if>
         </div>
 
     </f:with>
