@@ -46,6 +46,7 @@ class CrmUser {
     public static final Integer STATUS_NEW = 0
     public static final Integer STATUS_ACTIVE = 1
     public static final Integer STATUS_BLOCKED = -1
+    public static final Integer STATUS_CLOSED = -2
 
     static hasMany = [roles: CrmUserRole, permissions: CrmUserPermission, options: CrmUserOption]
 
@@ -60,7 +61,7 @@ class CrmUser {
         countryCode(size: 2..3, maxSize: 3, nullable: true)
         campaign(maxSize: 40, nullable: true)
         defaultTenant(nullable: true)
-        status(inList: [STATUS_NEW, STATUS_ACTIVE, STATUS_BLOCKED])
+        status(inList: [STATUS_NEW, STATUS_ACTIVE, STATUS_BLOCKED, STATUS_CLOSED])
     }
 
     static mapping = {

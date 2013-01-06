@@ -52,7 +52,7 @@ class CrmAccountController {
         }
         def crmAccount = crmSecurityService.getCurrentAccount()
         if (!crmAccount) {
-            redirect(mapping:'crm-account-create')
+            redirect(mapping: 'crm-account-create')
             return
         }
 
@@ -72,4 +72,32 @@ class CrmAccountController {
         [crmAccount: crmAccount, options: crmAccount.option, roles: crmAccountService.getRoleStatistics(crmAccount)]
     }
 
+    def delete(Long id) {
+        def crmAccount = CrmAccount.get(id)
+        if (!crmAccount) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND)
+            return
+        }
+        def crmUser = crmSecurityService.getCurrentUser()
+        if (!crmUser) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
+            return
+        }
+        if (crmAccount.user != crmUser) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN)
+            return
+        }
+
+        if (request.method == 'POST') {
+            crmAccount.status = CrmAccount.STATUS_CLOSED
+            crmAccount.save()
+            crmUser.status = CrmUser.STATUS_CLOSED
+            crmUser.save(flush: true)
+
+            flash.warning = message(code: 'crmAccount.deleted.message', args: [crmAccount.toString(), crmUser.email])
+            redirect mapping: "logout"
+        } else {
+            return [crmAccount: crmAccount, user: crmUser]
+        }
+    }
 }

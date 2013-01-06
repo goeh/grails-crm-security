@@ -127,7 +127,7 @@
                                     </tr>
                                     <tr>
                                         <td>Antal vyer</td>
-                                        <td>${crmAccount.tenants.size()} st</td>
+                                        <td><g:link mapping="crm-tenant">${crmAccount.tenants.size()} st</g:link></td>
                                         <td>${crmAccount.getItem('crmTenant')?.quantity ?: 1} st</td>
                                     </tr>
                                     <tr>
@@ -168,6 +168,13 @@
                                     icon="icon-file icon-white"
                                     label="crmTenant.button.create.label"/>
                     </crm:isAllowedMoreTenants>
+
+                    <crm:hasPermission permission="crmAccount:delete:${crmAccount.id}">
+                        <g:link action="delete" id="${crmAccount.id}" style="color:#990000; margin-left:15px;"
+                                onclick="return confirm('${message(code:'crmAccount.delete.confirm.message', default: 'Are you really sure you want to delete your account?')}')">
+                            <g:message code="crmAccount.button.delete.label" default="Delete Account"/>
+                        </g:link>
+                    </crm:hasPermission>
                 </div>
             </div>
 
