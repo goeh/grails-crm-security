@@ -123,9 +123,16 @@ class CrmTenantAdminController {
         }
         try {
             def tombstone = crmTenant.toString()
-            crmSecurityService.deleteTenant(id)
+            def crmAccount = crmTenant.account
+            crmSecurityService.runAs(crmAccount.user.username) {
+                crmSecurityService.deleteTenant(id, true)
+            }
             flash.warning = message(code: 'crmTenant.deleted.message', args: [message(code: 'crmTenant.label', default: 'Account'), tombstone])
-            redirect action: 'index'
+            if(crmSecurityService.isPermitted("crmUser:show")) {
+                redirect controller: 'crmUser', action: 'show', id: crmAccount.user.id
+            } else {
+                redirect controller: 'crmAccount', action: 'index'
+            }
         } catch (DataIntegrityViolationException e) {
             flash.error = message(code: 'crmTenant.not.deleted.message', args: [message(code: 'crmTenant.label', default: 'Account'), id])
             redirect action: 'edit', id: id

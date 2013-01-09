@@ -24,6 +24,7 @@ import grails.plugins.crm.core.CrmSecurityDelegate
 import grails.plugins.crm.core.DateUtils
 import grails.plugins.crm.core.TenantUtils
 import grails.plugins.crm.core.Pair
+import grails.plugins.crm.util.Graph
 import org.codehaus.groovy.grails.web.metaclass.BindDynamicMethod
 import org.codehaus.groovy.grails.web.util.WebUtils
 import org.grails.plugin.platform.events.EventMessage
@@ -200,7 +201,7 @@ class CrmSecurityService {
             }
         }
         // Accounts without tenants are ok to delete.
-        for(a in accounts) {
+        for (a in accounts) {
             deleteAccount(a.id)
         }
 
@@ -597,7 +598,7 @@ class CrmSecurityService {
      * @param id tenant id
      * @return true if the tenant was deleted
      */
-    boolean deleteTenant(Long id) {
+    boolean deleteTenant(Long id, boolean force = false) {
 
         // Get tenant.
         def crmTenant = CrmTenant.get(id)
@@ -618,32 +619,65 @@ class CrmSecurityService {
             throw new CrmException('crmTenant.delete.current.message', ['Tenant', crmTenant.name])
         }
 
-        // Make sure it's not the default tenant being deleted.
-        if (currentUser.defaultTenant == crmTenant.id) {
-            throw new CrmException('crmTenant.delete.start.message', ['Tenant', crmTenant.name])
-        }
-
-        // Make sure we don't delete a tenant that is in use by other users (via roles)
-        def affectedRoles = CrmUserRole.createCriteria().list() {
-            role {
-                eq('tenantId', id)
+        if (!force) {
+            // Make sure it's not the default tenant being deleted.
+            if (currentUser.defaultTenant == crmTenant.id) {
+                throw new CrmException('crmTenant.delete.start.message', ['Tenant', crmTenant.name])
             }
-            cache true
-        }
-        def otherPeopleAffected = affectedRoles.findAll { it.user.id != currentUser.id }.collect { it.user }
-        if (otherPeopleAffected) {
-            throw new CrmException('crmTenant.delete.others.message', ['Tenant', crmTenant.name, otherPeopleAffected.join(', ')])
-        }
 
-        // Make sure we don't delete a tenant that is in use by other users (via permissions)
-        def affectedPermissions = CrmUserPermission.findAllByTenantId(id)
-        otherPeopleAffected = affectedPermissions.findAll { it.user.id != currentUser.id }.collect { it.user }
-        if (otherPeopleAffected) {
-            throw new CrmException('crmTenant.delete.others.message', ['Tenant', crmTenant.name, otherPeopleAffected.join(', ')])
+            // Make sure we don't delete a tenant that is in use by other users (via roles)
+            def affectedRoles = CrmUserRole.createCriteria().list() {
+                role {
+                    eq('tenantId', id)
+                }
+                cache true
+            }
+            def otherPeopleAffected = affectedRoles.findAll { it.user.id != currentUser.id }.collect { it.user }
+            if (otherPeopleAffected) {
+                throw new CrmException('crmTenant.delete.others.message', ['Tenant', crmTenant.name, otherPeopleAffected.join(', ')])
+            }
+
+            // Make sure we don't delete a tenant that is in use by other users (via permissions)
+            def affectedPermissions = CrmUserPermission.findAllByTenantId(id)
+            otherPeopleAffected = affectedPermissions.findAll { it.user.id != currentUser.id }.collect { it.user }
+            if (otherPeopleAffected) {
+                throw new CrmException('crmTenant.delete.others.message', ['Tenant', crmTenant.name, otherPeopleAffected.join(', ')])
+            }
         }
 
         // Now we are ready to delete!
         def tenantInfo = crmTenant.dao
+
+        // Subscribers (CRM plugins) must tell us if they need to delete/cleanup data associated with this tenant.
+        // They do so by returning a Map with namespace, topic and dependencies.
+        // Example return values:
+        // crm-agreement plugin returns [namespace: 'crmAgreement', topic: 'nuke', dependencies: ['crmContact', 'crmTask']]
+        // crm-task plugin returns [namespace: 'crmTask', topic: 'cleanup', dependencies: ['crmContact']]
+        // crm-contact plugin returns [namespace: 'crmContact', topic: 'tenantDeleted']
+        // This will result in the following synchronized events being sent last in this method:
+        // event(for: 'crmAgreement', topic: 'nuke', data: tenantInfo)
+        // event(for: 'crmTask', topic: 'cleanup', data: tenantInfo)
+        // event(for: 'crmContact', topic: 'tenantDeleted', data: tenantInfo)
+        // dependencies are important to calculate cascade order.
+        def participants = event(for: "crmTenant", topic: "requestDelete", data: tenantInfo).values
+        log.debug "deleteTenant tx participants=$participants"
+        def graph = new Graph()
+        for (p in participants) {
+            if (!(p.namespace || p.topic)) {
+                throw new RuntimeException("Invalid deleteTenant participant specification: $p")
+            }
+            if (p.dependencies) {
+                for (d in p.dependencies) {
+                    graph.addEdge(p.namespace, d)
+                }
+            } else {
+                graph.addVertex(p.namespace)
+            }
+        }
+        graph.each { v ->
+            log.debug "event deleteTenant --------------> $v"
+            event(for: v.toString(), topic: "deleteTenant", data: tenantInfo, fork: false)
+        }
 
         // People who had this tenant as default tenant will have their defaultTenant reset.
         for (u in CrmUser.findAllByDefaultTenant(id)) {
@@ -654,27 +688,35 @@ class CrmSecurityService {
         crmAccount.discard()
         crmAccount = CrmAccount.lock(crmAccount.id)
 
-        // Delete my roles.
-        for (userrole in affectedRoles) {
-            def role = userrole.role
-            currentUser.removeFromRoles(userrole)
-            userrole.delete()
-            role.delete()
+        int n = 0
+        for (r in CrmUserRole.createCriteria().list() {
+            role {
+                eq('tenantId', id)
+            }
+        }) {
+            def u = r.user
+            u.removeFromRoles(r)
+            u.save()
+            n++
         }
+        log.info "Deleted $n user roles in tenant $id"
 
-        // Delete my permissions.
-        for (perm in affectedPermissions) {
-            currentUser.removeFromPermissions(perm)
-            perm.delete()
+        for (p in CrmUserPermission.findAllByTenantId(id)) {
+            def u = p.user
+            u.removeFromPermissions(p)
+            u.save()
+            n++
         }
+        log.info "Deleted $n user permissions in tenant $id"
 
-        // It's my account and nobody else uses it, lets nuke it!
+        CrmRole.findAllByTenantId(id)*.delete()
+
+        // Now lets nuke the tenant!
         crmAccount.removeFromTenants(crmTenant)
         crmTenant.delete()
 
         crmAccount.save(flush: true)
 
-        // Use platform-core events to broadcast that the tenant was deleted.
         // Receivers should remove any data associated with the tenant.
         event(for: "crm", topic: "tenantDeleted", data: tenantInfo)
 
