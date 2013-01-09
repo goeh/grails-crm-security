@@ -62,12 +62,10 @@ class CrmRegisterController {
                 }
                 break
             case "GET":
-                if (params.c) {
-                    request.session.crmRegisterCampaign = params.c
-                    if (!cmd.campaign) {
-                        cmd.campaign = params.c
-                    }
+                if (params.c || params.campaign) {
+                    request.session.crmRegisterCampaign = params.c ?: params.campaign
                 }
+                cmd.campaign = request.session.crmRegisterCampaign
                 cmd.clearErrors()
                 break
         }
