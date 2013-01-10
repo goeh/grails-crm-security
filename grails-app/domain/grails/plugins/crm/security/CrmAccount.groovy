@@ -165,10 +165,18 @@ class CrmAccount {
     void setItem(String productId, Integer quantity = 1) {
         def i = getItem(productId)
         if (i) {
+            i.quantity = quantity
+        } else {
+            addToItems(new CrmAccountItem(productId: productId, quantity: quantity))
+        }
+    }
+
+    int addItem(String productId, Integer quantity = 1) {
+        def i = getItem(productId)
+        if (i) {
             i.quantity = i.quantity + quantity
         } else {
-            i = new CrmAccountItem(productId: productId, quantity: quantity)
-            addToItems(i)
+            addToItems(new CrmAccountItem(productId: productId, quantity: quantity))
         }
     }
 

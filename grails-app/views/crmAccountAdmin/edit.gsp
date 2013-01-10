@@ -104,7 +104,7 @@
                             <label class="control-label">Vyer att flytta till denna abonnemang</label>
 
                             <div class="controls">
-                                <g:select from="${transfers}" name="transfer" optionKey="id" class="input-medium"
+                                <g:select from="${transfers}" name="transfer" optionKey="id" class="input-large"
                                           optionValue="${{ it.name + ' - ' + it.account.name + ' - ' + it.account.user.email }}"
                                           noSelection="['': '']"/>
                             </div>
