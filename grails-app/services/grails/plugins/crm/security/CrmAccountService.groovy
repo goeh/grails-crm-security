@@ -79,19 +79,4 @@ class CrmAccountService {
         } ?: 0f
     }
 
-    Map getRoleStatistics(CrmAccount crmAccount) {
-        def statistics = [:]
-        for (tenant in crmAccount.tenants*.ident()) {
-            def result = CrmUserRole.createCriteria().list() {
-                role {
-                    eq('tenantId', tenant)
-                }
-                cache true
-            }
-            for(userrole in result) {
-                statistics.get(userrole.role.name, [] as Set) << userrole.user.username
-            }
-        }
-        return statistics
-    }
 }

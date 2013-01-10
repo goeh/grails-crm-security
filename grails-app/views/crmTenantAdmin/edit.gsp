@@ -23,7 +23,7 @@
 <header class="page-header">
     <h1>
         <g:message code="crmTenant.edit.title" default="Edit account {1}" args="${[entityName, crmTenant]}"/>
-        <small>${crmTenant.user.username?.encodeAsHTML()}</small>
+        <small>${crmTenant.account?.encodeAsHTML()}</small>
     </h1>
 </header>
 

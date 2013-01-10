@@ -249,6 +249,26 @@ class CrmTenantController {
         }
     }
 
+    def transfer(Long id) {
+
+        def crmTenant = CrmTenant.get(id)
+        if (!crmTenant) {
+            flash.error = message(code: 'crmTenant.not.found.message', args: [message(code: 'crmTenant.label', default: 'Account'), id])
+            redirect mapping: "crm-tenant"
+            return
+        }
+        if (!checkPermission(crmTenant)) {
+            flash.error = message(code: 'crmTenant.permission.denied', args: [message(code: 'crmTenant.label', default: 'Account'), id])
+            redirect mapping: "crm-tenant"
+            return
+        }
+
+        crmSecurityService.transferTenant(id)
+
+        flash.warning = message(code: 'crmTenant.transfer.initiated.message', args: [message(code: 'crmTenant.label', default: 'Account'), id])
+        redirect action: 'edit', id: id
+    }
+
     def permissions(Long id) {
         if (!id) {
             id = TenantUtils.tenant

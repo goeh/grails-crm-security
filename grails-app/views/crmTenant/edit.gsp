@@ -22,8 +22,17 @@
 
 <body>
 
-<crm:header title="crmTenant.edit.title" subtitle="${crmTenant.account.encodeAsHTML()}"
-            args="[entityName, crmTenant]"/>
+<header class="page-header clearfix">
+    <crm:user>
+        <h1 class="pull-left">
+            <g:message code="crmTenant.edit.title" args="[entityName, crmTenant]"/>
+            <small>${crmTenant.account.encodeAsHTML()}</small>
+        </h1>
+        <g:if test="${crmTenant.transfer}">
+            <h3 class="pull-right alert-red">Flytt initierad <g:formatDate style="short" date="${crmTenant.transfer}"/> <i class="icon-share-alt"></i></h3>
+        </g:if>
+    </crm:user>
+</header>
 
 <div class="tabbable">
 
@@ -128,6 +137,14 @@
                     --%>
                     <crm:button type="link" icon="icon-remove" label="crmTenant.button.cancel.label"
                                 action="index"/>
+
+                    <crm:hasPermission tenant="${crmTenant.id}" permission="crmTenant:transfer:${crmTenant.id}">
+                        <g:link action="transfer" id="${crmTenant.id}" style="margin-left: 10px;"
+                                onclick="return confirm('${message(code: 'crmTenant.button.transfer.confirm.message', default: 'Are you sure?')}')">
+                            <g:message code="crmTenant.button.transfer.label" default="Transfer"/>
+                        </g:link>
+                    </crm:hasPermission>
+
                     <crm:hasPermission tenant="${crmTenant.id}" permission="crmTenant:delete:${crmTenant.id}">
                         <g:link action="delete" id="${crmTenant.id}" class="text-error" style="margin-left: 10px;"
                                 onclick="return confirm('${message(code: 'crmTenant.button.delete.confirm.message', default: 'Are you sure?')}')">

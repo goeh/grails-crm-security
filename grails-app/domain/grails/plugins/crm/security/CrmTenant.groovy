@@ -33,6 +33,7 @@ class CrmTenant {
     String locale
     String currency
     String name
+    Date transfer
     CrmTenant parent
 
     static belongsTo = [account: CrmAccount]
@@ -41,6 +42,7 @@ class CrmTenant {
         locale(maxSize: 5, nullable: true, blank: false)
         currency(maxSize: 4, nullable: true)
         name(size: 2..80, maxSize: 80, nullable: false, blank: false, unique: 'account')
+        transfer(nullable:true)
         parent(nullable: true)
     }
     static mapping = {

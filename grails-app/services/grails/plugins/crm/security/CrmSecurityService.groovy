@@ -179,8 +179,14 @@ class CrmSecurityService {
      *
      * @return a Map with user properties (username, name, email, ...)
      */
-    Map<String, Object> getUserInfo(String username) {
-        CrmUser.findByUsername(username, [cache: true])?.dao
+    Map<String, Object> getUserInfo(String username = null) {
+        def user
+        if(username) {
+            user = CrmUser.findByUsername(username, [cache: true])
+        } else {
+            user = getUser(null)
+        }
+        user?.dao
     }
 
     /**
@@ -472,6 +478,71 @@ class CrmSecurityService {
             crmTenant.setOption(key, value)
         }
         crmTenant.save(flush: true)
+    }
+
+    boolean transferTenant(Long tenantId, CrmAccount toAccount = null) {
+        def crmTenant = CrmTenant.get(tenantId)
+        if (!crmTenant) {
+            throw new CrmException('tenant.not.found.message', ['Tenant', tenantId])
+        }
+        def rval
+        if (toAccount) {
+            crmTenant.account = toAccount
+            crmTenant.transfer = null
+            crmTenant.save(flush: true)
+
+            def crmUser = toAccount.user
+            addSystemRole(crmUser, 'admin', crmTenant.id)
+
+            toAccount.refresh()
+
+            toAccount.setItem('crmTenant', toAccount.tenants.size())
+
+            def stats = getRoleStatistics(toAccount)
+            def maxAdmins = toAccount.getItem('crmAdmin')?.quantity ?: 0
+            def maxUsers = toAccount.getItem('crmUser')?.quantity ?: 0
+            def maxGuests = toAccount.getItem('crmGuest')?.quantity ?: 0
+            def currentAdmins = stats.admin?.size() ?: 0
+            def currentUsers = stats.user?.size() ?: 0
+            def currentGuests = stats.guest?.size() ?: 0
+            if (currentAdmins > maxAdmins) {
+                toAccount.setItem('crmAdmin', currentAdmins)
+            }
+            if (currentUsers > maxUsers) {
+                toAccount.setItem('crmUser', currentUsers)
+            }
+            if (currentGuests > maxGuests) {
+                toAccount.setItem('crmGuest', currentGuests)
+            }
+
+            toAccount.save()
+
+            event(for: "crmTenant", topic: "transferred", data: crmTenant.dao)
+            rval = true
+        } else {
+            crmTenant.transfer = new Date()
+            crmTenant.save(flush: true)
+            event(for: "crmTenant", topic: "transfer", data: crmTenant.dao)
+            rval = false
+        }
+        return rval
+    }
+
+
+    Map getRoleStatistics(CrmAccount crmAccount) {
+        def statistics = [:]
+        for (tenant in crmAccount.tenants*.ident()) {
+            def result = CrmUserRole.createCriteria().list() {
+                role {
+                    eq('tenantId', tenant)
+                }
+                cache true
+            }
+            for (userrole in result) {
+                statistics.get(userrole.role.name, [] as Set) << userrole.user.username
+            }
+        }
+        return statistics
     }
 
     /**
@@ -957,7 +1028,9 @@ class CrmSecurityService {
         if (!role) {
             role = new CrmRole(name: roleName, param: roleName, tenantId: tenantId).save(failOnError: true, flush: true)
         }
-        new CrmUserRole(user: user, role: role).save(failOnError: true, flush: true)
+        if (!CrmUserRole.countByUserAndRole(user, role)) {
+            new CrmUserRole(user: user, role: role).save(failOnError: true, flush: true)
+        }
     }
 
     List<Integer> getRoleUsage(String roleName, Long tenantId = null) {

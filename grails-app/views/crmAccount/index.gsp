@@ -1,4 +1,4 @@
-<%@ page import="grails.plugins.crm.security.CrmTenant; grails.plugins.crm.core.TenantUtils" contentType="text/html;charset=UTF-8" %>
+<%@ page import="grails.plugins.crm.core.WebUtils; grails.plugins.crm.security.CrmTenant; grails.plugins.crm.core.TenantUtils" contentType="text/html;charset=UTF-8" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -116,13 +116,13 @@
                                     <thead>
                                     <tr>
                                         <th>Resurs</th>
-                                        <th>Utnyttjande</th>
+                                        <th>Utnyttjat</th>
                                         <th>Maxgräns</th>
                                     </tr>
                                     <tbody>
                                     <tr>
                                         <td>Arkivplats</td>
-                                        <td>n/a</td>
+                                        <td>${WebUtils.bytesFormatted(crmAccount.getOption('resourceUsage') ?: 0)}</td>
                                         <td>${crmAccount.getItem('crmContent')?.quantity ?: 0} GB</td>
                                     </tr>
                                     <tr>

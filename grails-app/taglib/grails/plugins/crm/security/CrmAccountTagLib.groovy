@@ -8,7 +8,6 @@ class CrmAccountTagLib {
     static namespace = "crm"
 
     def crmSecurityService
-    def crmAccountService
 
     def accountQuotaGreaterThan = { attrs, body ->
         def account = crmSecurityService.getCurrentAccount()
@@ -39,7 +38,7 @@ class CrmAccountTagLib {
     def isAllowedMoreInvitations = {attrs, body->
             def account = crmSecurityService.getCurrentAccount()
             if (account) {
-                def stats = crmAccountService.getRoleStatistics(account)
+                def stats = crmSecurityService.getRoleStatistics(account)
                 def maxAdmins = account.getItem('crmAdmin')?.quantity ?: 1
                 def maxUsers = account.getItem('crmUser')?.quantity ?: 0
                 def maxGuests = account.getItem('crmGuest')?.quantity ?: 0

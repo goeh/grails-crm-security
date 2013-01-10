@@ -65,11 +65,12 @@ class CrmAccountController {
                 if (crmAccount.save()) {
                     flash.success = message(code: 'crmAccount.updated.message', default: "Account updated")
                     redirect(action: 'index')
+                    return
                 }
                 break
         }
 
-        [crmAccount: crmAccount, options: crmAccount.option, roles: crmAccountService.getRoleStatistics(crmAccount)]
+        [crmAccount: crmAccount, options: crmAccount.option, roles: crmSecurityService.getRoleStatistics(crmAccount)]
     }
 
     def delete(Long id) {

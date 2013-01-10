@@ -162,6 +162,16 @@ class CrmAccount {
         items?.find { it.productId == productId }
     }
 
+    void setItem(String productId, Integer quantity = 1) {
+        def i = getItem(productId)
+        if (i) {
+            i.quantity = i.quantity + quantity
+        } else {
+            i = new CrmAccountItem(productId: productId, quantity: quantity)
+            addToItems(i)
+        }
+    }
+
     /**
      * Return tenant parameters (options) as a Map.
      *

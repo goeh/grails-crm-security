@@ -27,7 +27,7 @@ class CrmPermissionController {
 
     static navigation = [
             [group: 'admin',
-                    order: 70,
+                    order: 80,
                     title: 'crmNamedPermission.index.label',
                     action: 'list'
             ]
