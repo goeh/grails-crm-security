@@ -156,11 +156,10 @@ class CrmUser {
             removeOption(key)
         } else {
             def o = options.find { it.key == key }
-            if (o) {
+            if (o != null) {
                 o.value = value
             } else {
-                o = new CrmUserOption(key, value)
-                addToOptions(o)
+                addToOptions(new CrmUserOption(key, value))
             }
         }
     }
@@ -169,12 +168,13 @@ class CrmUser {
         if (key == null) {
             return getOptionsMap()
         }
-        return options.find { it.key == key }?.value
+        def o = options.find { it.key == key }
+        return o != null ? o.value : null
     }
 
     boolean removeOption(String key) {
         def o = options.find { it.key == key }
-        if (o) {
+        if (o != null) {
             removeFromOptions(o)
             return true
         }

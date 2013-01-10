@@ -6,7 +6,6 @@ package grails.plugins.crm.security
 class CrmUserAccountSpec extends grails.plugin.spock.IntegrationSpec {
     def crmSecurityService
     def grailsApplication
-    def crmFeatureService
 
     def "create user without specifying status should create an inactive user"() {
         when:
@@ -137,6 +136,31 @@ class CrmUserAccountSpec extends grails.plugin.spock.IntegrationSpec {
         result.user.username == "createAccountUser3"
         result.getOption('campaign') == 'SPRING-12'
         result.getOption('createdBy') == "createAccountUser3"
+
+        when:
+        result.setOption('count', 42)
+
+        then:
+        result.getOption('count') == 42
+
+        when:
+        result.setOption('count', 12345)
+
+        then:
+        result.getOption('count') == 12345
+
+        when:
+        result = CrmAccount.get(result.id)
+        result.setOption('count', 7)
+
+        then:
+        result.getOption('count') == 7
+
+        when:
+        result.removeOption('count')
+
+        then:
+        result.getOption('count') == null
     }
 
 }

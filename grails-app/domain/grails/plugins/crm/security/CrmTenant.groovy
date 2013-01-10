@@ -42,7 +42,7 @@ class CrmTenant {
         locale(maxSize: 5, nullable: true, blank: false)
         currency(maxSize: 4, nullable: true)
         name(size: 2..80, maxSize: 80, nullable: false, blank: false, unique: 'account')
-        transfer(nullable:true)
+        transfer(nullable: true)
         parent(nullable: true)
     }
     static mapping = {
@@ -95,7 +95,7 @@ class CrmTenant {
      * @return options
      */
     private Map<String, Object> getOptionsMap() {
-        options.inject([:]) {map, o ->
+        options.inject([:]) { map, o ->
             map[o.key] = o.value
             map
         }
@@ -105,26 +105,26 @@ class CrmTenant {
         if (value == null) {
             removeOption(key)
         } else {
-            def o = options.find {it.key == key}
-            if (o) {
+            def o = options.find { it.key == key }
+            if (o != null) {
                 o.value = value
             } else {
-                o = new CrmTenantOption(key, value)
-                addToOptions(o)
+                addToOptions(new CrmTenantOption(key, value))
             }
         }
     }
 
     def getOption(String key = null) {
-        if(key == null) {
+        if (key == null) {
             return getOptionsMap()
         }
-        return options.find {it.key == key}?.value
+        def o = options.find { it.key == key }
+        return o != null ? o.value : null
     }
 
     boolean removeOption(String key) {
-        def o = options.find {it.key == key}
-        if (o) {
+        def o = options.find { it.key == key }
+        if (o != null) {
             removeFromOptions(o)
             return true
         }
