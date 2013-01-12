@@ -82,6 +82,12 @@ class CrmAccount {
         items sort: 'productId'
     }
 
+    static namedQueries = {
+        activeAccounts {
+            inList('status', [STATUS_FREE, STATUS_TRIAL, STATUS_INVOICE, STATUS_ACTIVE])
+        }
+    }
+
     static final List BIND_WHITELIST = [
             'name',
             'email',

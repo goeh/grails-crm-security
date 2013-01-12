@@ -180,7 +180,10 @@
 
     <div class="form-actions">
         <crm:button visual="primary" icon="icon-ok icon-white"
-                    label="crmAccount.button.save.label"/>
+                    group="true" label="crmAccount.button.save.label"/>
+
+        <crm:button type="link" controller="crmUser" action="show" id="${crmAccount.user.id}"
+                    visual="info" icon="icon-user icon-white" label="${crmAccount.user.name}"/>
 
         <crm:hasPermission permission="crmAccount:delete:${crmAccount.id}">
             <g:link action="delete" id="${crmAccount.id}" style="color:#990000; margin-left:15px;"
