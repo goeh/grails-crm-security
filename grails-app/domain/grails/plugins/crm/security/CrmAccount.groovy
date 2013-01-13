@@ -108,6 +108,9 @@ class CrmAccount {
     }
 
     transient boolean isActive() {
+        if(isClosed()) {
+            return false
+        }
         if (expires == null) {
             return true
         }
