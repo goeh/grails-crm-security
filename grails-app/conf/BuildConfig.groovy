@@ -30,7 +30,7 @@ grails.project.dependency.resolution = {
         test(":spock:0.7") { export = false }
         test(":codenarc:0.17") { export = false }
 
-        compile(":platform-core:1.0.M6") { excludes 'resources' }
+        compile(":platform-core:1.0.RC5") { excludes 'resources' }
         compile ":resources:1.2.RC2"
         compile ":cache:1.0.0"
         //compile ":cache-ehcache:1.0.0.M2"

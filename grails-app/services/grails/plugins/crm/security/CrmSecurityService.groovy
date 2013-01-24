@@ -990,8 +990,26 @@ class CrmSecurityService {
         role.save(failOnError: true, flush: true)
     }
 
-    boolean hasRole(String rolename, Long tenant = TenantUtils.tenant) {
-        CrmRole.findByNameAndTenantId(rolename, tenant, [cache: true]) != null
+    boolean hasRole(String rolename, Long tenant = null, String username = null) {
+        if(!tenant) {
+            tenant = TenantUtils.getTenant()
+        }
+        if (!username) {
+            username = crmSecurityDelegate.currentUser
+            if (!username) {
+                throw new IllegalArgumentException("not authenticated")
+            }
+        }
+        CrmUserRole.createCriteria().count() {
+            user {
+                eq('username', username)
+            }
+            role {
+                eq('tenantId', tenant)
+                eq('name', rolename)
+            }
+            cache true
+        }
     }
 
     CrmUserRole addUserRole(String username, String rolename, Date expires = null, Long tenant = null) {

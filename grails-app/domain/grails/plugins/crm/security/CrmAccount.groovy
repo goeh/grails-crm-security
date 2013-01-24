@@ -84,7 +84,7 @@ class CrmAccount {
 
     static namedQueries = {
         activeAccounts {
-            inList('status', [STATUS_FREE, STATUS_TRIAL, STATUS_INVOICE, STATUS_ACTIVE])
+            gt('status', STATUS_CLOSED)
         }
     }
 
