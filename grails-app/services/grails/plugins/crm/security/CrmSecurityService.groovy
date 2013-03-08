@@ -399,7 +399,7 @@ class CrmSecurityService {
      *
      * @param tenant
      */
-    private void enableDefaultFeatures(Long tenant) {
+    void enableDefaultFeatures(Long tenant) {
         for (feature in crmFeatureService.getApplicationFeatures().findAll { it.enabled }) {
             crmFeatureService.enableFeature(feature.name, tenant)
         }

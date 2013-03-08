@@ -23,7 +23,7 @@ grails.project.dependency.resolution = {
     plugins {
         build(":tomcat:$grailsVersion",
                 ":hibernate:$grailsVersion",
-                ":release:2.2.0") {
+                ":release:2.2.1") {
             export = false
         }
 
@@ -34,11 +34,11 @@ grails.project.dependency.resolution = {
         compile ":resources:1.2.RC2"
         compile ":cache:1.0.0"
         //compile ":cache-ehcache:1.0.0.M2"
-        runtime ":jquery:1.8.3"
+        //runtime ":jquery:1.8.3"
         runtime ":simple-captcha:0.8.5"
 
         compile "grails.crm:crm-core:latest.integration"
-        runtime "grails.crm:crm-ui-bootstrap:latest.integration"
+        //runtime "grails.crm:crm-ui-bootstrap:latest.integration"
         runtime "grails.crm:crm-feature:latest.integration"
     }
 }
