@@ -31,10 +31,8 @@ grails.project.dependency.resolution = {
         test(":codenarc:0.17") { export = false }
 
         compile(":platform-core:1.0.RC5") { excludes 'resources' }
-        compile ":resources:1.2.RC2"
-        compile ":cache:1.0.0"
-        //compile ":cache-ehcache:1.0.0.M2"
-        //runtime ":jquery:1.8.3"
+        //compile ":resources:1.2"
+        compile ":cache:1.0.1"
         runtime ":simple-captcha:0.8.5"
 
         compile "grails.crm:crm-core:latest.integration"

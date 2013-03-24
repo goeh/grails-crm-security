@@ -115,7 +115,7 @@ class CrmUser {
      * String postalCode, String city, String countryCode, String telephone, boolean enabled, boolean defaultTenant]
      * @return a data access object (Map) representing the domain instance.
      */
-    Map<String, Object> getDao() {
+    transient Map<String, Object> getDao() {
         def tenant = TenantUtils.tenant
         def allPerm = []
         if (permissions) {
@@ -129,8 +129,14 @@ class CrmUser {
                 allPerm.addAll(p)
             }
         }
-        def map = properties.subMap(['id', 'guid', 'username', 'email', 'name', 'company', 'telephone',
-                'postalCode', 'countryCode', 'campaign', 'status', 'enabled', 'defaultTenant'])
+        def map = ['id', 'guid', 'username', 'email', 'name', 'company', 'telephone',
+                'postalCode', 'countryCode', 'campaign', 'status', 'enabled', 'defaultTenant'].inject([:]) { m, i ->
+            def v = this."$i"
+            if (v != null) {
+                m[i] = v
+            }
+            m
+        }
         def tz = timezone ? TimeZone.getTimeZone(timezone) : TimeZone.getDefault()
         map.timezone = tz
         map.roles = allRoles
