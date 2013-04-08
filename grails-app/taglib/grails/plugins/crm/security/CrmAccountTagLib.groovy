@@ -7,10 +7,13 @@ class CrmAccountTagLib {
 
     static namespace = "crm"
 
-    def crmSecurityService
+    def crmAccountService
 
     def accountQuotaGreaterThan = { attrs, body ->
-        def account = crmSecurityService.getCurrentAccount()
+        def account = attrs.account
+        if (!account) {
+            account = crmAccountService.getCurrentAccount()
+        }
         if (account) {
             def quota = attrs.quota
             if (!quota) {
@@ -24,49 +27,55 @@ class CrmAccountTagLib {
         }
     }
 
-    def isAllowedMoreTenants = {attrs, body->
-        def account = crmSecurityService.getCurrentAccount()
+    def isAllowedMoreTenants = { attrs, body ->
+        def account = attrs.account
+        if (!account) {
+            account = crmAccountService.getCurrentAccount()
+        }
         if (account) {
             def max = account.getItem('crmTenant')?.quantity ?: 1
             def size = account.tenants?.size() ?: 0
-            if(size < max) {
+            if (size < max) {
                 out << body()
             }
         }
     }
 
-    def isAllowedMoreInvitations = {attrs, body->
-            def account = crmSecurityService.getCurrentAccount()
-            if (account) {
-                def stats = crmSecurityService.getRoleStatistics(account)
-                def maxAdmins = account.getItem('crmAdmin')?.quantity ?: 1
-                def maxUsers = account.getItem('crmUser')?.quantity ?: 0
-                def maxGuests = account.getItem('crmGuest')?.quantity ?: 0
-                def currentAdmins = stats.admin?.size() ?: 0
-                def currentUsers = stats.user?.size() ?: 0
-                def currentGuests = stats.guest?.size() ?: 0
-                def moreAdmins = maxAdmins - currentAdmins
-                def moreUsers = maxUsers - currentUsers
-                def moreGuests = maxGuests - currentGuests
-                def ok = false
-                switch(attrs.role) {
-                    case "admin":
-                        ok = moreAdmins > 0
-                        break
-                    case "user":
-                        ok = moreUsers > 0
-                        break
-                    case "guest":
-                        ok = moreGuests > 0
-                        break
-                    default:
-                        ok = (moreAdmins + moreUsers + moreGuests) > 0
-                        break
-                }
-                if(ok) {
-                    out << body()
-                }
+    def isAllowedMoreInvitations = { attrs, body ->
+        def account = attrs.account
+        if (!account) {
+            account = crmAccountService.getCurrentAccount()
+        }
+        if (account) {
+            def stats = crmAccountService.getRoleStatistics(account)
+            def maxAdmins = account.getItem('crmAdmin')?.quantity ?: 1
+            def maxUsers = account.getItem('crmUser')?.quantity ?: 0
+            def maxGuests = account.getItem('crmGuest')?.quantity ?: 0
+            def currentAdmins = stats.admin?.size() ?: 0
+            def currentUsers = stats.user?.size() ?: 0
+            def currentGuests = stats.guest?.size() ?: 0
+            def moreAdmins = maxAdmins - currentAdmins
+            def moreUsers = maxUsers - currentUsers
+            def moreGuests = maxGuests - currentGuests
+            def ok
+            switch (attrs.role) {
+                case "admin":
+                    ok = moreAdmins > 0
+                    break
+                case "user":
+                    ok = moreUsers > 0
+                    break
+                case "guest":
+                    ok = moreGuests > 0
+                    break
+                default:
+                    ok = (moreAdmins + moreUsers + moreGuests) > 0
+                    break
+            }
+            if (ok) {
+                out << body()
             }
         }
+    }
 
 }

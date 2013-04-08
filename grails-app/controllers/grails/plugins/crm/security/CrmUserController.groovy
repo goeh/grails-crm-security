@@ -34,6 +34,7 @@ class CrmUserController {
     ]
 
     def crmSecurityService
+    def crmAccountService
     def crmUserService
 
     def index() {
@@ -63,8 +64,9 @@ class CrmUserController {
             redirect action: 'index'
             return
         }
-        def tenants = crmSecurityService.getTenants(crmUser.username)
-        [crmUser: crmUser, tenantList: tenants]
+        def accounts = crmAccountService.getAccounts(crmUser.username)
+        def tenants = crmSecurityService.getTenants(crmUser.username, true)
+        [crmUser: crmUser, accountList: accounts, tenantList: tenants]
     }
 
     def edit() {
@@ -77,8 +79,8 @@ class CrmUserController {
         // If this user owns an account with tenants, it cannot be deleted.
         def deleteOk = true
         def accounts = CrmAccount.findAllByUser(crmUser)
-        for(a in accounts) {
-            if(a.tenants) {
+        for (a in accounts) {
+            if (a.tenants) {
                 deleteOk = false
             }
         }
@@ -87,7 +89,7 @@ class CrmUserController {
         switch (request.method) {
             case 'GET':
                 return [crmUser: crmUser, tenantList: tenants,
-                        accountList: crmSecurityService.getAccounts(crmUser.username), deleteOk: deleteOk]
+                        accountList: crmAccountService.getAccounts(crmUser.username), deleteOk: deleteOk]
             case 'POST':
                 if (params.version && crmUser.version) {
                     def version = params.version.toLong()
@@ -96,7 +98,7 @@ class CrmUserController {
                                 [message(code: 'crmUser.label', default: 'User')] as Object[],
                                 "Another user has updated this user while you were editing")
                         render view: 'edit', model: [crmUser: crmUser, tenantList: tenants,
-                                accountList: crmSecurityService.getAccounts(crmUser.username), deleteOk: deleteOk]
+                                accountList: crmAccountService.getAccounts(crmUser.username), deleteOk: deleteOk]
                         return
                     }
                 }
@@ -105,7 +107,7 @@ class CrmUserController {
 
                 if (!crmUser.save(flush: true)) {
                     render view: 'edit', model: [crmUser: crmUser, tenantList: tenants,
-                            accountList: crmSecurityService.getAccounts(crmUser.username), deleteOk: deleteOk]
+                            accountList: crmAccountService.getAccounts(crmUser.username), deleteOk: deleteOk]
                     return
                 }
                 if (params.password1) {
@@ -114,7 +116,7 @@ class CrmUserController {
                     } else {
                         flash.error = message(code: 'crmSettings.password.not.equal.message', default: "Passwords were not equal")
                         render view: 'edit', model: [crmUser: crmUser, tenantList: tenants,
-                                accountList: crmSecurityService.getAccounts(crmUser.username), deleteOk: deleteOk]
+                                accountList: crmAccountService.getAccounts(crmUser.username), deleteOk: deleteOk]
                         return
                     }
                 }
@@ -133,9 +135,9 @@ class CrmUserController {
             return
         }
         def deleteOk = true
-        def accounts = CrmAccount.findAllByUser(crmUser)
-        for(a in accounts) {
-            if(a.tenants) {
+        def accounts = crmAccountService.getAccounts(crmUser.username)
+        for (a in accounts) {
+            if (a.tenants) {
                 deleteOk = false
             }
         }
@@ -148,11 +150,15 @@ class CrmUserController {
 
         def tombstone = crmUser.toString()
         try {
-            if (crmSecurityService.deleteUser(crmUser.username)) {
-                flash.warning = message(code: 'crmUser.deleted.message', args: [message(code: 'crmUser.label', default: 'User'), tombstone])
-                redirect action: 'index'
-                return
+            CrmUser.withTransaction { tx ->
+                for (a in accounts) {
+                    crmAccountService.deleteAccount(a)
+                }
+                crmSecurityService.deleteUser(crmUser.username)
             }
+            flash.warning = message(code: 'crmUser.deleted.message', args: [message(code: 'crmUser.label', default: 'User'), tombstone])
+            redirect action: 'index'
+            return
         } catch (DataIntegrityViolationException e) {
             log.error("Failed to delete user [${crmUser.username}]", e)
         }

@@ -16,14 +16,15 @@
 
 package grails.plugins.crm.security
 
-import grails.plugins.crm.core.DateUtils
-
 import javax.servlet.http.HttpServletResponse
 
 /**
  * CRM Account Management.
  */
 class CrmAccountController {
+
+    static allowedMethods = [index: 'GET', delete: 'POST']
+
     static navigation = [
             [group: 'settings',
                     order: 53,
@@ -36,23 +37,35 @@ class CrmAccountController {
     def crmSecurityService
     def crmAccountService
 
-    private Date getExpiryDate(Locale locale) {
-        def trialDays = grailsApplication.config.crm.account.trialDays ?: 30
-        def cal = Calendar.getInstance(locale)
-        cal.clearTime()
-        cal.add(Calendar.DAY_OF_MONTH, trialDays)
-        return DateUtils.endOfWeek(0, cal.getTime()) // Be nice and expire on a Sunday.
-    }
-
     def index() {
         def user = crmSecurityService.getCurrentUser()
         if (!user) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
             return
         }
-        def crmAccount = crmSecurityService.getCurrentAccount()
+        def allAccounts = crmAccountService.getAccounts(user.username)
+        if (allAccounts.isEmpty()) {
+            redirect action: "create"
+        } else if (allAccounts.size() == 1) {
+            redirect action: "edit", id: allAccounts.head().id
+        } else {
+            redirect action: "list"
+        }
+    }
+
+    def edit(Long id) {
+        def user = crmSecurityService.getCurrentUser()
+        if (!user) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
+            return
+        }
+        def crmAccount = CrmAccount.get(id)
         if (!crmAccount) {
-            redirect(mapping: 'crm-account-create')
+            redirect action: "index"
+            return
+        }
+        if (crmAccount.user.id != user.id) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN)
             return
         }
 
@@ -64,14 +77,39 @@ class CrmAccountController {
 
                 if (crmAccount.save()) {
                     flash.success = message(code: 'crmAccount.updated.message', default: "Account updated")
-                    redirect(action: 'index')
+                    redirect(action: 'edit', id: crmAccount.id)
                     return
                 }
                 break
         }
-
-        [crmAccount: crmAccount, options: crmAccount.option, roles: crmSecurityService.getRoleStatistics(crmAccount)]
+        def allAccounts = crmAccountService.getAccounts(user.username)
+        [user: user, accountList: allAccounts, crmAccount: crmAccount, options: crmAccount.option,
+                tenantList: crmAccount.tenants, roles: crmAccountService.getRoleStatistics(crmAccount)]
     }
+
+    def list() {
+        def user = crmSecurityService.getCurrentUser()
+        if (user) {
+            return [crmUser: user, accountList: crmAccountService.getAccounts(user.username)]
+        }
+        response.sendError(HttpServletResponse.SC_UNAUTHORIZED)
+    }
+
+    def create() {
+        def user = crmSecurityService.getCurrentUser()
+
+        switch (request.method) {
+            case "GET":
+                return [crmUser: user, crmAccount: new CrmAccount()]
+                break
+            case "POST":
+                def crmTenant = crmAccountService.createTrialAccount(user, params, request.getLocale())
+                flash.success = message(code: 'crmAccount.updated.message', default: "Account updated")
+                redirect(action: 'edit', id: crmTenant.account.id)
+                break
+        }
+    }
+
 
     def delete(Long id) {
         def crmAccount = CrmAccount.get(id)
@@ -90,11 +128,7 @@ class CrmAccountController {
         }
 
         if (request.method == 'POST') {
-            crmAccount.status = CrmAccount.STATUS_CLOSED
-            crmAccount.save()
-            crmUser.status = CrmUser.STATUS_CLOSED
-            crmUser.save(flush: true)
-
+            crmSecurityService.crmAccountService(id)
             flash.warning = message(code: 'crmAccount.deleted.message', args: [crmAccount.toString(), crmUser.email])
             redirect mapping: "logout"
         } else {

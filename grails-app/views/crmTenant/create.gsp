@@ -30,6 +30,8 @@
 
 <g:form action="create" class="form-inline">
 
+    <g:hiddenField name="account.id" value="${crmTenant.account?.id}"/>
+
     <div class="row-fluid">
         <div class="span8">
 
@@ -100,7 +102,7 @@
         </div>
 
         <div class="span4">
-            <tt:html name="account-create-help"></tt:html>
+            <tt:html name="tenant-create-help"></tt:html>
         </div>
     </div>
 

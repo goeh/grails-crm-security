@@ -59,7 +59,7 @@
         <div class="row-fluid">
             <f:with bean="crmTenant">
 
-                <div class="span6">
+                <div class="span4">
                     <div class="row-fluid">
                         <f:field property="name" input-autofocus=""/>
 
@@ -73,7 +73,31 @@
                     </div>
                 </div>
 
-                <div class="span6">
+                <div class="span4">
+                    <h4>Funktioner</h4>
+                    <dl>
+                        <crm:eachFeature tenant="${crmTenant.id}" var="feature">
+                            <dt>${feature.name.encodeAsHTML()}</dt>
+                            <dd class="${feature.enabled ? 'enabled' : 'disabled'}"
+                                title="${feature.dump().encodeAsHTML()}">
+                                ${feature.description?.encodeAsHTML()}
+                                ${feature.enabled ? '' : '(disabled)'}
+                                <g:formatDate date="${feature.expires}"/>
+                            </dd>
+                        </crm:eachFeature>
+                    </dl>
+
+                    <h4>Parametrar</h4>
+                    <dl>
+                        <g:each in="${crmTenant.options}" var="o">
+                            <dt>${o.key}</dt>
+                            <dd>${o.value}</dd>
+                        </g:each>
+                    </dl>
+
+                </div>
+
+                <div class="span4">
                     <div class="row-fluid">
 
                         <f:field property="dateCreated">

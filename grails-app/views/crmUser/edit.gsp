@@ -65,7 +65,7 @@
                                   valueMessagePrefix="crmUser.status"
                                   value="${crmUser.status}" class="input-medium"/>
                     </f:field>
-                    <f:field property="loginFailures" input-class="input-medium"/>
+                    <f:field property="loginFailures" input-class="input-small"/>
                 </f:with>
 
                 <div class="control-group ">
@@ -98,6 +98,9 @@
                             confirm="crmUser.button.delete.confirm.message"
                             permission="crmUser:delete"/>
             </g:if>
+            <g:else>
+                <button class="btn" disabled="">Delete</button>
+            </g:else>
         </div>
 
     </f:with>

@@ -21,14 +21,12 @@ import grails.plugin.cache.CacheEvict
 import grails.plugin.cache.Cacheable
 import grails.plugins.crm.core.CrmException
 import grails.plugins.crm.core.CrmSecurityDelegate
-import grails.plugins.crm.core.DateUtils
 import grails.plugins.crm.core.TenantUtils
 import grails.plugins.crm.core.Pair
 import grails.plugins.crm.util.Graph
 import org.codehaus.groovy.grails.web.metaclass.BindDynamicMethod
 import org.codehaus.groovy.grails.web.util.WebUtils
 import org.grails.plugin.platform.events.EventMessage
-
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -181,7 +179,7 @@ class CrmSecurityService {
      */
     Map<String, Object> getUserInfo(String username = null) {
         def user
-        if(username) {
+        if (username) {
             user = CrmUser.findByUsername(username, [cache: true])
         } else {
             user = getUser(null)
@@ -193,148 +191,21 @@ class CrmSecurityService {
      * Delete a user.
      *
      * @param username username
-     * @return true if the user was deleted
      */
-    boolean deleteUser(String username) {
+    void deleteUser(String username) {
         def user = CrmUser.findByUsername(username)
         if (!user) {
             throw new IllegalArgumentException("[$username] is not a valid user")
         }
-        def accounts = CrmAccount.findAllByUser(user)
-        for (a in accounts) {
-            if (a.tenants) {
-                throw new IllegalArgumentException("A user [${user.username}] with active accounts [${a}] cannot be deleted")
-            }
-        }
-        // Accounts without tenants are ok to delete.
-        for (a in accounts) {
-            deleteAccount(a.id)
+        def accounts = CrmAccount.countByUser(user)
+        if(accounts) {
+            throw new IllegalArgumentException("A user [${user.username}] with [$accounts] active accounts cannot be deleted")
         }
 
         def userInfo = user.dao
         user.delete(flush: true)
         crmSecurityDelegate.deleteUser(username)
         event(for: "crm", topic: "userDeleted", data: userInfo)
-        return true
-    }
-
-    CrmAccount getCurrentAccount() {
-        def crmUser = getCurrentUser()
-        if (!crmUser) {
-            throw new IllegalArgumentException("User is not authenticated")
-        }
-        getAccounts(crmUser.username)?.find { it } // Return first account found.
-    }
-
-    /**
-     * Create a new account.
-     * @param params
-     * @param map with products to add to the account
-     * @return the created CrmAccount instance
-     */
-    CrmAccount createAccount(Map<String, Object> params = [:], Object products = null) {
-        def user = params.user
-        if (!user) {
-            def username = crmSecurityDelegate.getCurrentUser()
-            if (!username) {
-                throw new IllegalArgumentException("Can't create tenant because user is not authenticated")
-            }
-            user = getEnabledUser(username)
-            if (!user) {
-                throw new CrmException("user.not.found.message", [username])
-            }
-        }
-        def account = new CrmAccount()
-        def args = [account, params, [include: CrmAccount.BIND_WHITELIST]]
-        new BindDynamicMethod().invoke(account, 'bind', args.toArray())
-
-        account.user = user
-
-        def status = params.status
-        if (status) {
-            if (status instanceof Number) {
-                account.status = status
-            } else {
-                account.setStatusText(status.toString())
-            }
-        }
-
-        if (!account.name) {
-            account.name = user.name
-        }
-        if (!account.email) {
-            account.email = user.email
-        }
-
-        def expires = params.remove('expires')
-        if (expires) {
-            if (expires instanceof Date) {
-                if (!(expires instanceof java.sql.Date)) {
-                    expires = new java.sql.Date(expires.clearTime().time)
-                }
-            } else {
-                expires = DateUtils.parseSqlDate(expires.toString())
-            }
-            account.expires = expires
-        }
-
-        params.options.each { key, value ->
-            account.setOption(key, value)
-        }
-
-        if (products) {
-            if (products instanceof Map) {
-                products.each { p, n ->
-                    account.addToItems(productId: p, quantity: n)
-                }
-            } else {
-                for (p in products) {
-                    account.addToItems(productId: p, quantity: 1)
-                }
-            }
-        }
-
-        account.save(failOnError: true, flush: true)
-
-        event(for: "crm", topic: "accountCreated", data: account.dao)
-
-        return account
-    }
-
-    boolean deleteAccount(Long id) {
-
-        def crmAccount = CrmAccount.get(id)
-        if (!crmAccount) {
-            throw new CrmException('crmAccount.not.found.message', ['Account', id])
-        }
-        if (crmAccount.tenants) {
-            throw new CrmException('crmAccount.not.empty.message', ['Account', id])
-        }
-
-        def accountInfo = crmAccount.dao
-
-        crmAccount.delete(flush: true)
-
-        // Use platform-core events to broadcast that the account was deleted.
-        // Receivers should remove any data associated with the account.
-        event(for: "crm", topic: "accountDeleted", data: accountInfo)
-
-        return true
-    }
-
-    List<CrmAccount> getAccounts(String username = null) {
-        if (!username) {
-            username = crmSecurityDelegate.currentUser
-            if (!username) {
-                throw new IllegalArgumentException("Can't list accounts because user is not authenticated")
-            }
-        }
-        CrmAccount.createCriteria().list([sort: 'name', order: 'asc']) {
-            user {
-                eq('username', username)
-            }
-            cache true
-        }
     }
 
     /**
@@ -480,71 +351,6 @@ class CrmSecurityService {
         crmTenant.save(flush: true)
     }
 
-    boolean transferTenant(Long tenantId, CrmAccount toAccount = null) {
-        def crmTenant = CrmTenant.get(tenantId)
-        if (!crmTenant) {
-            throw new CrmException('tenant.not.found.message', ['Tenant', tenantId])
-        }
-        def rval
-        if (toAccount) {
-            crmTenant.account = toAccount
-            crmTenant.transfer = null
-            crmTenant.save(flush: true)
-
-            def crmUser = toAccount.user
-            addSystemRole(crmUser, 'admin', crmTenant.id)
-
-            toAccount.refresh()
-
-            toAccount.setItem('crmTenant', toAccount.tenants.size())
-
-            def stats = getRoleStatistics(toAccount)
-            def maxAdmins = toAccount.getItem('crmAdmin')?.quantity ?: 0
-            def maxUsers = toAccount.getItem('crmUser')?.quantity ?: 0
-            def maxGuests = toAccount.getItem('crmGuest')?.quantity ?: 0
-            def currentAdmins = stats.admin?.size() ?: 0
-            def currentUsers = stats.user?.size() ?: 0
-            def currentGuests = stats.guest?.size() ?: 0
-            if (currentAdmins > maxAdmins) {
-                toAccount.setItem('crmAdmin', currentAdmins)
-            }
-            if (currentUsers > maxUsers) {
-                toAccount.setItem('crmUser', currentUsers)
-            }
-            if (currentGuests > maxGuests) {
-                toAccount.setItem('crmGuest', currentGuests)
-            }
-
-            toAccount.save()
-
-            event(for: "crmTenant", topic: "transferred", data: crmTenant.dao)
-            rval = true
-        } else {
-            crmTenant.transfer = new Date()
-            crmTenant.save(flush: true)
-            event(for: "crmTenant", topic: "transfer", data: crmTenant.dao)
-            rval = false
-        }
-        return rval
-    }
-
-
-    Map getRoleStatistics(CrmAccount crmAccount) {
-        def statistics = [:]
-        for (tenant in crmAccount.tenants*.ident()) {
-            def result = CrmUserRole.createCriteria().list() {
-                role {
-                    eq('tenantId', tenant)
-                }
-                cache true
-            }
-            for (userrole in result) {
-                statistics.get(userrole.role.name, [] as Set) << userrole.user.username
-            }
-        }
-        return statistics
-    }
-
     /**
      * Get the current executing tenant.
      *
@@ -579,7 +385,7 @@ class CrmSecurityService {
      * @param username username
      * @return collection of CrmTenant instances
      */
-    List<CrmTenant> getTenants(String username = null) {
+    List<CrmTenant> getTenants(String username = null, Boolean ignoreExpires = false) {
         if (!username) {
             username = crmSecurityDelegate.currentUser
             if (!username) {
@@ -588,11 +394,9 @@ class CrmSecurityService {
         }
         def result = []
         try {
-            def tenants = getAllTenants(username)
+            def tenants = getAllTenants(username, ignoreExpires)
             if (tenants) {
-                result = CrmTenant.createCriteria().list() {
-                    inList('id', tenants)
-                }
+                result = CrmTenant.getAll(tenants)
             }
         } catch (Exception e) {
             log.error("Failed to get tenants for user [$username]", e)
@@ -627,8 +431,13 @@ class CrmSecurityService {
 
         def today = new java.sql.Date(new Date().clearTime().time)
         def account = tenant.account
+        // If account has expired, it's not a valid tenant.
+        if (account.expires != null && account.expires < today) {
+            return false
+        }
+
         // Owned tenants
-        if (account.user == user && (account.expires == null || account.expires > today)) {
+        if (account.user == user && (account.expires == null || account.expires >= today)) {
             return true
         }
 
@@ -841,7 +650,7 @@ class CrmSecurityService {
         return arg.toString() == username
     }
 
-    private Set<Long> getAllTenants(String username = null) {
+    private List<Long> getAllTenants(String username = null, Boolean ignoreExpires) {
         if (!username) {
             username = crmSecurityDelegate.currentUser
             if (!username) {
@@ -859,9 +668,11 @@ class CrmSecurityService {
                 }
                 account {
                     eq('user', user)
-                    or {
-                        isNull('expires')
-                        ge('expires', today)
+                    if (!ignoreExpires) {
+                        or {
+                            isNull('expires')
+                            ge('expires', today)
+                        }
                     }
                 }
                 cache true
@@ -877,9 +688,11 @@ class CrmSecurityService {
                     }
                 }
                 eq('user', user)
-                or {
-                    isNull('expires')
-                    ge('expires', today)
+                if (!ignoreExpires) {
+                    or {
+                        isNull('expires')
+                        ge('expires', today)
+                    }
                 }
                 cache true
             }
@@ -892,9 +705,11 @@ class CrmSecurityService {
                     property('tenantId')
                 }
                 eq('user', user)
-                or {
-                    isNull('expires')
-                    ge('expires', today)
+                if (!ignoreExpires) {
+                    or {
+                        isNull('expires')
+                        ge('expires', today)
+                    }
                 }
                 cache true
             }
@@ -902,7 +717,7 @@ class CrmSecurityService {
                 result.addAll(tmp)
             }
         }
-        return result
+        result.toList()
     }
 
     /**
@@ -924,7 +739,7 @@ class CrmSecurityService {
         }
         if (tenant) {
             // Check that the user has permission to access this tenant.
-            def availableTenants = getAllTenants(username)
+            def availableTenants = getAllTenants(username, false)
             if (!availableTenants.contains(tenant)) {
                 throw new IllegalArgumentException("Can't set default tenant to [$tenant] because it's not a valid tenant for user [$username]")
             }
@@ -991,7 +806,7 @@ class CrmSecurityService {
     }
 
     boolean hasRole(String rolename, Long tenant = null, String username = null) {
-        if(!tenant) {
+        if (!tenant) {
             tenant = TenantUtils.getTenant()
         }
         if (!username) {
@@ -1041,7 +856,7 @@ class CrmSecurityService {
         return userrole
     }
 
-    private void addSystemRole(CrmUser user, String roleName, Long tenantId) {
+    protected void addSystemRole(CrmUser user, String roleName, Long tenantId) {
         def role = CrmRole.findByNameAndTenantId(roleName, tenantId, [cache: true])
         if (!role) {
             role = new CrmRole(name: roleName, param: roleName, tenantId: tenantId).save(failOnError: true, flush: true)

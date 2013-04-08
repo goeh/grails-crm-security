@@ -46,8 +46,9 @@ class CrmAccountAdminController {
                 break
             case "POST":
                 def date = params.remove('expires')
-                //bindData(crmAccount, params, [include: CrmAccount.BIND_WHITELIST])
+                bindData(crmAccount, params, [include: CrmAccount.BIND_WHITELIST])
                 bindDate(crmAccount, 'expires', date, user.timezone)
+                crmAccount.setStatusText(params.status)
                 for (item in ['crmTenant', 'crmAdmin', 'crmUser', 'crmGuest', 'crmContent']) {
                     crmAccount.setItem(item, params.int(item))
                 }
@@ -68,7 +69,17 @@ class CrmAccountAdminController {
             ne('account', crmAccount)
         }
         [crmAccount: crmAccount, options: crmAccount.option, transfers: transfers,
-                roles: crmSecurityService.getRoleStatistics(crmAccount)]
+                roles: crmAccountService.getRoleStatistics(crmAccount), statusList: buildStatusList()]
+    }
+
+    private List<String> buildStatusList() {
+        CrmAccount.constraints.status.inList.collect {
+            def dummy = new CrmAccount()
+            dummy.status = it
+            def code = dummy.getStatusText()
+            dummy.discard()
+            return code
+        }
     }
 
     private void bindDate(def target, String property, String value, TimeZone timezone = null) {
@@ -91,12 +102,10 @@ class CrmAccountAdminController {
             response.sendError(HttpServletResponse.SC_NOT_FOUND)
             return
         }
-        def crmUser = crmAccount.user
-        crmAccount.status = CrmAccount.STATUS_CLOSED
-        crmAccount.save()
-        crmUser.status = CrmUser.STATUS_CLOSED
-        crmUser.save(flush: true)
 
+        crmAccountService.closeAccount(id)
+
+        def crmUser = crmAccount.user
         flash.warning = message(code: 'crmAccount.deleted.message', args: [crmAccount.toString(), crmUser.email])
         redirect(action: 'edit', id: id)
     }
@@ -117,7 +126,7 @@ class CrmAccountAdminController {
             return
         }
         // Do the transfer
-        crmSecurityService.transferTenant(crmTenant.ident(), crmAccount)
+        crmAccountService.transferTenant(crmTenant.ident(), crmAccount)
 
         flash.warning = message(code: 'crmTenant.transfer.complete.message', args: [crmTenant.toString(), crmAccount.toString()])
     }

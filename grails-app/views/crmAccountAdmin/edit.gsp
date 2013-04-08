@@ -55,67 +55,82 @@
     </crm:alert>
 </g:hasErrors>
 
-<g:form action="edit" id="${crmAccount.id}">
+<g:form>
+    <g:hiddenField name="id" value="${crmAccount.id}"/>
     <g:hiddenField name="version" value="${crmAccount.version}"/>
 
     <f:with bean="${crmAccount}">
 
         <div class="row-fluid">
 
-            <div class="span6">
-                <div class="row-fluid">
-                    <div class="alert alert-success">
-                        <h3>Faktureringsadress</h3>
+            <div class="span4">
 
-                        <p>
-                            ${fieldValue(bean: crmAccount, field: 'name')}<br/>
-                            <g:if test="${crmAccount.reference}">
-                                ${fieldValue(bean: crmAccount, field: 'reference')}<br/>
-                            </g:if>
-                            <g:if test="${crmAccount.address1}">
-                                ${fieldValue(bean: crmAccount, field: 'address1')}<br/>
-                            </g:if>
-                            ${fieldValue(bean: crmAccount, field: 'postalCode')} ${fieldValue(bean: crmAccount, field: 'city')}<br/>
-                            E-post ${fieldValue(bean: crmAccount, field: 'email')}<br/>
-                            <g:if test="${crmAccount.telephone}">
-                                Tel: ${fieldValue(bean: crmAccount, field: 'telephone')}<br/>
-                            </g:if>
-                            <g:if test="${crmAccount.ssn}">
-                                Org.nr: ${fieldValue(bean: crmAccount, field: 'ssn')}
-                            </g:if>
-                        </p>
+                <f:field property="name" input-class="span11"/>
+                <f:field property="address1" input-class="span11"/>
+                <!--
+                <f:field property="address2" input-class="span11"/>
+                <f:field property="address3" input-class="span11"/>
+                -->
+                <div class="control-group">
+                    <label class="control-label"><g:message
+                            code="crmAccount.postalAddress.label"/></label>
+
+                    <div class="controls">
+                        <g:textField name="postalCode" value="${crmAccount.postalCode}"
+                                     class="span4"/>
+                        <g:textField name="city" value="${crmAccount.city}"
+                                     class="span7"/>
                     </div>
+                </div>
+            <!--
+            <f:field property="region" input-class="span10"/>
+            -->
+                <f:field property="countryCode">
+                    <g:countrySelect name="countryCode" value="${crmAccount.countryCode}"
+                                     noSelection="['': '']" class="span10"/>
+                </f:field>
 
-                    <f:field property="name" input-class="input-large"/>
-                    <f:field property="email" input-class="input-large"/>
+                <f:field property="ssn" input-class="span7"/>
+
+                <g:if test="${transfers}">
+                    <div class="control-group">
+                        <label class="control-label">Vyer att flytta till denna abonnemang</label>
+
+                        <div class="controls">
+                            <g:select from="${transfers}" name="transfer" optionKey="id" class="span11"
+                                      optionValue="${{ it.name + ' - ' + it.account.name + ' - ' + it.account.user.email }}"
+                                      noSelection="['': '']"/>
+                        </div>
+                    </div>
+                </g:if>
+
+            </div>
+
+            <div class="span3">
+                <div class="row-fluid">
+                    <f:field property="reference" input-class="span11"/>
+                    <f:field property="email" input-class="span11"/>
+                    <f:field property="telephone" input-class="span11"/>
+
+                    <f:field property="status">
+                        <g:select from="${statusList}" name="status" value="${crmAccount.getStatusText()}"
+                                  class="span11" valueMessagePrefix="crmAccount.status"/>
+                    </f:field>
 
                     <f:field property="expires">
                         <div class="input-append date"
                              data-date="${formatDate(format: 'yyyy-MM-dd', date: crmAccount.expires ?: new Date())}">
-                            <g:textField name="expires" class="input-medium" size="10"
+                            <g:textField name="expires" class="span10" size="10"
                                          placeholder="ÅÅÅÅ-MM-DD"
                                          value="${formatDate(format: 'yyyy-MM-dd', date: crmAccount.expires)}"/><span
                                 class="add-on"><i class="icon-th"></i></span>
                         </div>
                     </f:field>
 
-                    <g:if test="${transfers}">
-                        <div class="control-group">
-                            <label class="control-label">Vyer att flytta till denna abonnemang</label>
-
-                            <div class="controls">
-                                <g:select from="${transfers}" name="transfer" optionKey="id" class="input-large"
-                                          optionValue="${{ it.name + ' - ' + it.account.name + ' - ' + it.account.user.email }}"
-                                          noSelection="['': '']"/>
-                            </div>
-                        </div>
-                    </g:if>
-
                 </div>
             </div>
 
-
-            <div class="span6">
+            <div class="span5">
                 <div class="row-fluid">
 
                     <h4>Resursutnyttjande</h4>
@@ -179,18 +194,15 @@
 
 
     <div class="form-actions">
-        <crm:button visual="primary" icon="icon-ok icon-white"
+        <crm:button action="edit" visual="primary" icon="icon-ok icon-white"
                     group="true" label="crmAccount.button.save.label"/>
 
-        <crm:button type="link" controller="crmUser" action="show" id="${crmAccount.user.id}"
+        <crm:button type="link" controller="crmUser" action="show" id="${crmAccount.user.id}" fragment="account"
                     visual="info" icon="icon-user icon-white" label="${crmAccount.user.name}"/>
 
-        <crm:hasPermission permission="crmAccount:delete:${crmAccount.id}">
-            <g:link action="delete" id="${crmAccount.id}" style="color:#990000; margin-left:15px;"
-                    onclick="return confirm('${message(code: 'crmAccount.delete.confirm.message', default: 'Are you really sure you want to delete your account?')}')">
-                <g:message code="crmAccount.button.delete.label" default="Delete Account"/>
-            </g:link>
-        </crm:hasPermission>
+        <crm:button action="delete" visual="danger" label="crmAccount.button.delete.label"
+                    permission="crmAccount:delete:${crmAccount.id}"
+                    confirm="crmAccount.delete.confirm.message"/>
     </div>
 
 </g:form>

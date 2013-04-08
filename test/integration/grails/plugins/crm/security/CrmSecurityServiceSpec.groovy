@@ -69,7 +69,7 @@ class CrmSecurityServiceSpec extends grails.plugin.spock.IntegrationSpec {
         securityConfig.default.permission.user = ["crmTenant:index,activate,create,edit"]
         securityConfig.default.permission.admin = ["crmTenant:*"]
         def user = crmSecurityService.createUser([username: "test17", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
-        def account = crmSecurityService.runAs(user.username) { crmSecurityService.createAccount() }
+        def account = crmSecurityService.runAs(user.username) { crmAccountService.createAccount() }
 
         when:
         crmSecurityService.runAs(user.username) { tenant = crmSecurityService.createTenant(account, "Default") }

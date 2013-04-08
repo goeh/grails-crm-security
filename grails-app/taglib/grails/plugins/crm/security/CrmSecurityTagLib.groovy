@@ -194,4 +194,11 @@ class CrmSecurityTagLib {
         }
     }
 
+    def isValidTenant = { attrs, body ->
+        def tenant = attrs.tenant ?: TenantUtils.tenant
+        def username = attrs.username ?: crmSecurityService.getCurrentUser()?.username
+        if(crmSecurityService.isValidTenant(tenant, username)) {
+            out << body()
+        }
+    }
 }

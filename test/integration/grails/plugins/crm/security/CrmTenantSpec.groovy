@@ -30,7 +30,7 @@ class CrmTenantSpec extends grails.plugin.spock.IntegrationSpec {
         def features
         def user = crmSecurityService.createUser([username: "test5", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
         def account = crmSecurityService.runAs(user.username) {
-            crmSecurityService.createAccount(name: "My Account", telephone: "+46800000",
+            crmAccountService.createAccount(name: "My Account", telephone: "+46800000",
                     address1: "Box 123", postalCode: "12345", city: "Capital", reference: "test")
         }
         when:
@@ -59,7 +59,7 @@ class CrmTenantSpec extends grails.plugin.spock.IntegrationSpec {
         def swedish = new Locale("sv", "SE")
         def spanish = new Locale("es", "ES")
         def user = crmSecurityService.createUser([username: "test16", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
-        def account = crmSecurityService.runAs(user.username) { crmSecurityService.createAccount() }
+        def account = crmSecurityService.runAs(user.username) { crmAccountService.createAccount() }
 
         when:
         crmSecurityService.runAs(user.username) {
@@ -78,7 +78,7 @@ class CrmTenantSpec extends grails.plugin.spock.IntegrationSpec {
 
         given:
         def user = crmSecurityService.createUser([username: "test6", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
-        def account = crmSecurityService.runAs(user.username) { crmSecurityService.createAccount() }
+        def account = crmSecurityService.runAs(user.username) { crmAccountService.createAccount() }
 
         when:
         crmSecurityService.runAs(user.username) { tenant = crmSecurityService.createTenant(account, "My Tenant") }
@@ -97,7 +97,7 @@ class CrmTenantSpec extends grails.plugin.spock.IntegrationSpec {
 
         given:
         def user = crmSecurityService.createUser([username: "test7", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
-        def account = crmSecurityService.runAs(user.username) { crmSecurityService.createAccount() }
+        def account = crmSecurityService.runAs(user.username) { crmAccountService.createAccount() }
 
         when:
         crmSecurityService.runAs(user.username) {
@@ -120,7 +120,7 @@ class CrmTenantSpec extends grails.plugin.spock.IntegrationSpec {
         def t
 
         crmSecurityService.runAs(user.username) {
-            def account = crmSecurityService.createAccount()
+            def account = crmAccountService.createAccount()
             t = crmSecurityService.createTenant(account, "test")
         }
 

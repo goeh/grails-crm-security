@@ -57,6 +57,11 @@ class CrmTenantController {
             return
         }
         def account = crmSecurityService.currentAccount
+        if (account && !account.isActive()) {
+            // Our current account is closed!
+            redirect(mapping: 'crm-account')
+            return
+        }
         def tenants = crmSecurityService.tenants
         if (!(account || tenants)) {
             // If we have no account and no access to tenants we probably rejected an invitation.
@@ -98,9 +103,19 @@ class CrmTenantController {
             return
         }
 
-        def crmAccount = crmSecurityService.getCurrentAccount()
+        def crmAccount
+        if (params['account.id']) {
+            crmAccount = CrmAccount.get(params['account.id'])
+        } else {
+            crmAccount = crmAccountService.getCurrentAccount()
+        }
         if (!crmAccount) {
             redirect(mapping: "crm-account")
+            return
+        }
+
+        if (crmAccount.user != crmUser) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN)
             return
         }
 
@@ -161,7 +176,7 @@ class CrmTenantController {
 
         def availableFeatures = crmAccountService.getAccountFeatures(crmAccount)
 
-        return [crmUser: crmUser, crmTenant: crmTenant, features: [], allFeatures: availableFeatures]
+        return [crmUser: crmUser, crmAccount: crmAccount, crmTenant: crmTenant, features: [], allFeatures: availableFeatures]
     }
 
     def edit() {
@@ -263,7 +278,7 @@ class CrmTenantController {
             return
         }
 
-        crmSecurityService.transferTenant(id)
+        crmAccountService.transferTenant(id)
 
         flash.warning = message(code: 'crmTenant.transfer.initiated.message', args: [message(code: 'crmTenant.label', default: 'Account'), id])
         redirect action: 'edit', id: id
@@ -314,7 +329,7 @@ class CrmTenantController {
                 break
         }
 
-        return [me: crmSecurityService.getUser(), crmAccount: crmSecurityService.getCurrentAccount(),
+        return [me: crmSecurityService.getUser(), crmAccount: crmAccountService.getCurrentAccount(),
                 crmTenant: crmTenant, errorBean: error,
                 permissions: crmSecurityService.getTenantPermissions(crmTenant.id),
                 invitations: crmInvitationService?.getInvitationsFor(null, crmTenant.id, true)]

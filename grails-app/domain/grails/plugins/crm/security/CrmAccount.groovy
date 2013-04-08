@@ -73,7 +73,7 @@ class CrmAccount {
         status(inList: [STATUS_BLOCKED, STATUS_CLOSED, STATUS_FREE, STATUS_TRIAL, STATUS_INVOICE, STATUS_ACTIVE])
     }
 
-    static transients = ['dao', 'trial', 'active', 'closed', 'statusText']
+    static transients = ['dao', 'address', 'trial', 'active', 'closed', 'statusText']
 
     static mapping = {
         table 'crm_account'
@@ -229,6 +229,52 @@ class CrmAccount {
             return true
         }
         return false
+    }
+
+    String getAddress(boolean includePostalCode = true, String delimiter = ', ') {
+        StringBuilder s = new StringBuilder()
+        if (address1) {
+            s << address1
+        }
+        if (address2) {
+            if (s.length() > 0) {
+                s << delimiter
+            }
+            s << address2
+        }
+        if (address3) {
+            if (s.length() > 0) {
+                s << delimiter
+            }
+            s << address3
+        }
+        if (postalCode && includePostalCode) {
+            if (s.length() > 0) {
+                s << delimiter
+            }
+            s << postalCode
+        }
+        if (city) {
+            if (postalCode && includePostalCode) {
+                s << ' '
+            } else if (s.length() > 0) {
+                s << delimiter
+            }
+            s << city
+        }
+        if (region) {
+            if (s.length() > 0) {
+                s << delimiter
+            }
+            s << region
+        }
+        if (countryCode) {
+            if (s.length() > 0) {
+                s << delimiter
+            }
+            s << countryCode
+        }
+        return s.toString()
     }
 
     String toString() {

@@ -5,6 +5,7 @@ package grails.plugins.crm.security
  */
 class CrmUserAccountSpec extends grails.plugin.spock.IntegrationSpec {
     def crmSecurityService
+    def crmAccountService
     def grailsApplication
 
     def "create user without specifying status should create an inactive user"() {
@@ -84,7 +85,7 @@ class CrmUserAccountSpec extends grails.plugin.spock.IntegrationSpec {
 
         when:
         crmSecurityService.runAs("createAccountUser1") {
-            result = crmSecurityService.createAccount()
+            result = crmAccountService.createAccount()
         }
 
         then:
@@ -102,7 +103,7 @@ class CrmUserAccountSpec extends grails.plugin.spock.IntegrationSpec {
 
         when:
         crmSecurityService.runAs("createAccountUser2") {
-            result = crmSecurityService.createAccount(name: "My Account", telephone: "+46800000",
+            result = crmAccountService.createAccount(name: "My Account", telephone: "+46800000",
                     address1: "Box 123", postalCode: "12345", city: "Capital", reference: "test")
         }
 
@@ -125,7 +126,7 @@ class CrmUserAccountSpec extends grails.plugin.spock.IntegrationSpec {
 
         when:
         crmSecurityService.runAs("createAccountUser3") {
-            result = crmSecurityService.createAccount(name: "My Account", telephone: "+46800000",
+            result = crmAccountService.createAccount(name: "My Account", telephone: "+46800000",
                     address1: "Box 123", postalCode: "12345", city: "Capital", reference: "test",
                     options: [campaign: 'SPRING-12', createdBy: crmSecurityService.currentUser?.username])
         }
@@ -163,4 +164,27 @@ class CrmUserAccountSpec extends grails.plugin.spock.IntegrationSpec {
         result.getOption('count') == null
     }
 
+    def "create account with features"() {
+        given:
+        def result
+        crmSecurityService.createUser([username: "createAccountUser4", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
+
+        when:
+        crmSecurityService.runAs("createAccountUser4") {
+            result = crmAccountService.createAccount(name: "My Account", telephone: "+46800000",
+                    address1: "Box 123", postalCode: "12345", city: "Capital", reference: "test",
+                    options: [campaign: 'SPRING-12', createdBy: crmSecurityService.currentUser?.username])
+            crmAccountService.addItem(result, 'crmContact', 1, 'st')
+            crmAccountService.addItem(result, 'crmContent', 2, 'GB')
+            crmAccountService.addItem(result, 'crmTenant', 5, 'st')
+            crmAccountService.addItem(result, 'crmAdmin', 5, 'st')
+            crmAccountService.addItem(result, 'crmUser', 10, 'st')
+            crmAccountService.addItem(result, 'crmGuest', 25, 'st')
+        }
+
+        then:
+        crmAccountService.getItem(result, 'crmContact').getQuantity() == 1
+        crmAccountService.getItem(result, 'crmContent').getQuantity() == 2
+        crmAccountService.getItem(result, 'crmContent').getUnit() == 'GB'
+    }
 }
