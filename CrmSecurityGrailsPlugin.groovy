@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Goran Ehrsson.
+ * Copyright (c) 2013 Goran Ehrsson.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ class CrmSecurityGrailsPlugin {
     // Dependency group
     def groupId = "grails.crm"
     // the plugin version
-    def version = "1.0.7"
+    def version = "1.1"
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "2.0 > *"
     // the other plugins this plugin depends on
@@ -46,31 +46,6 @@ Specific security implementeations exists for Apache Shiro (crm-security-shiro).
     def organization = [name: "Technipelago AB", url: "http://www.technipelago.se/"]
     def issueManagement = [system: "github", url: "https://github.com/goeh/grails-crm-security/issues"]
     def scm = [url: "https://github.com/goeh/grails-crm-security"]
-
-    def features = {
-        security {
-            description "Security Framework"
-            link controller: 'crmTenant'
-            enabled true
-            required true
-            hidden true
-            permissions {
-                guest "crmTenant:index", "crmSettings:*"
-                user "crmTenant:index,create", "crmSettings:*"
-                admin "crmSettings:*", "crmAccount:*"
-                // NOTE Tenant specific permissions are added to each role
-                // by CrmSecurityService#setupFeaturePermissions()
-                // TODO is it possible to extend setupFeaturePermissions()
-                // with support for this syntax? "crmTenant:activate:$tenant"
-            }
-        }
-        register {
-            description "User Registration"
-            link controller: 'crmRegister'
-            enabled true
-            hidden true
-        }
-    }
 
     def doWithSpring = {
         // Register resetPasswordDelegate bean to be used by the reset-password plugin.
