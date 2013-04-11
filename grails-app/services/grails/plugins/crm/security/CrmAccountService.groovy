@@ -308,15 +308,15 @@ class CrmAccountService {
         return item
     }
 
-    Float getQuantity(CrmAccount account, String productId) {
-        getQuantityAndUnit(account, productId)?.getLeft() ?: 0f
+    Integer getQuantity(CrmAccount account, String productId) {
+        getQuantityAndUnit(account, productId)?.getLeft() ?: 0
     }
 
     String getUnit(CrmAccount account, String productId) {
         getQuantityAndUnit(account, productId)?.getRight() ?: 'st'
     }
 
-    Pair<Float, String> getQuantityAndUnit(CrmAccount account, String productId) {
+    Pair<Integer, String> getQuantityAndUnit(CrmAccount account, String productId) {
         def result = CrmAccountItem.createCriteria().get() {
             projections {
                 property('quantity')
@@ -326,7 +326,7 @@ class CrmAccountService {
             eq('productId', productId)
             cache true
         }
-        return result ? new Pair<Float, String>(* result) : null
+        return result ? new Pair<Integer, String>(* result) : null
     }
 
     CrmTenant createTrialAccount(CrmUser user, Map params, Locale locale = null) {

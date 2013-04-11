@@ -7,14 +7,14 @@ class CrmAccountItem {
     String productId
     Integer quantity
     String unit
-    Float discount
+    Double discount
 
     static belongsTo = [account: CrmAccount]
     static constraints = {
         productId(maxSize: 40, blank: false, unique: 'account')
         quantity(min: -99999, max: 99999)
         unit(maxSize: 40, nullable: false, blank: false)
-        discount(nullable: true, min: -999999f, max: 999999f, scale: 2)
+        discount(nullable: true, min: -999999d, max: 999999d, scale: 2)
     }
     static mapping = {
         cache true
