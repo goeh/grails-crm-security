@@ -120,7 +120,7 @@
 
                             <h4>Resursutnyttjande</h4>
 
-                            <table class="table tabled-bordered">
+                            <table class="table table-bordered">
                                 <thead>
                                 <tr>
                                     <th>Resurs</th>
@@ -178,14 +178,10 @@
                     </crm:isAllowedMoreTenants>
                 </g:unless>
 
-                <crm:button type="link" mapping="crm-account-store" id="${crmAccount.id}" visual="success"
-                            icon="icon-shopping-cart icon-white"
-                            label="crmAccount.button.features.label"/>
-
                 <crm:button action="delete" visual="danger" label="crmAccount.button.delete.label"
                             confirm="crmAccount.delete.confirm.message"/>
 
-                <g:unless test="${crmAccount.isTrial()}">
+                <g:unless test="${grailsApplication.config.crm.account.multiple && !crmAccount.isTrial()}">
                     <g:link action="create" title="${message(code: 'crmAccount.create.help')}"
                             style="margin-left:10px;">
                         <g:message code="crmAccount.create.label"/>

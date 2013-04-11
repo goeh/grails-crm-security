@@ -35,9 +35,23 @@ class CrmAccountEditCommand implements Serializable {
     String countryCode
     String ssn
     String reference
+    String plan
 
     static constraints = {
-        importFrom CrmAccount
+        //importFrom CrmAccount
+        name(size: 2..80, maxSize: 80, blank: false)
+        email(maxSize: 80, blank: false, email: true)
+        telephone(size: 4..20, maxSize: 20, nullable: true)
+        address1(maxSize: 80, nullable: true)
+        address2(maxSize: 80, nullable: true)
+        address3(maxSize: 80, nullable: true)
+        postalCode(size: 2..20, maxSize: 20, blank: false)
+        city(size: 2..40, maxSize: 40, blank: false)
+        region(maxSize: 40, nullable: true)
+        countryCode(size: 2..3, maxSize: 3, nullable: true)
+        ssn(maxSize: 40, nullable: true)
+        reference(maxSize: 40, nullable: true)
+        plan(maxSize: 80, nullable: true)
     }
 
     String toString() {

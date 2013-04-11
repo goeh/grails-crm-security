@@ -25,14 +25,6 @@ class CrmAccountController {
 
     static allowedMethods = [index: 'GET', delete: 'POST']
 
-    static navigation = [
-            [group: 'settings',
-                    order: 53,
-                    title: 'crmAccount.index.label',
-                    action: 'index'
-            ]
-    ]
-
     def grailsApplication
     def crmSecurityService
     def crmAccountService
@@ -128,7 +120,7 @@ class CrmAccountController {
         }
 
         if (request.method == 'POST') {
-            crmSecurityService.crmAccountService(id)
+            crmAccountService.deleteAccount(crmAccount)
             flash.warning = message(code: 'crmAccount.deleted.message', args: [crmAccount.toString(), crmUser.email])
             redirect mapping: "logout"
         } else {
