@@ -22,12 +22,11 @@ package grails.plugins.crm.security
 class CrmTenantSpec extends grails.plugin.spock.IntegrationSpec {
 
     def crmSecurityService
-    def crmFeatureService
+    def crmAccountService
 
     def "create tenant"() {
         given:
         def result
-        def features
         def user = crmSecurityService.createUser([username: "test5", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
         def account = crmSecurityService.runAs(user.username) {
             crmAccountService.createAccount(name: "My Account", telephone: "+46800000",
@@ -42,14 +41,12 @@ class CrmTenantSpec extends grails.plugin.spock.IntegrationSpec {
 
         when:
         crmSecurityService.runAs(user.username) {
-            def t1 = crmSecurityService.createTenant(account, "My First Tenant")
-            def t2 = crmSecurityService.createTenant(account, "My Second Tenant")
+            crmSecurityService.createTenant(account, "My First Tenant")
+            crmSecurityService.createTenant(account, "My Second Tenant")
             result = crmSecurityService.getTenants()
-            features = crmFeatureService.getFeatures(t1.id)
         }
         then:
         result.size() == 2
-        features.find { it.name == 'security' }
     }
 
     def "create tenant with locale"() {

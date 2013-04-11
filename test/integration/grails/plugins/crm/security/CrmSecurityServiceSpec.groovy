@@ -19,7 +19,7 @@ package grails.plugins.crm.security
 class CrmSecurityServiceSpec extends grails.plugin.spock.IntegrationSpec {
 
     def crmSecurityService
-    def grailsApplication
+    def crmAccountService
 
     def "runAs changes current user"() {
         def result
@@ -61,21 +61,4 @@ class CrmSecurityServiceSpec extends grails.plugin.spock.IntegrationSpec {
         thrown(Exception)
     }
 
-    def "test default permissions"() {
-        given:
-        def securityConfig = grailsApplication.config.crm.security
-        def tenant
-        securityConfig.default.permission.guest = ["crmTenant:index,activate"]
-        securityConfig.default.permission.user = ["crmTenant:index,activate,create,edit"]
-        securityConfig.default.permission.admin = ["crmTenant:*"]
-        def user = crmSecurityService.createUser([username: "test17", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
-        def account = crmSecurityService.runAs(user.username) { crmAccountService.createAccount() }
-
-        when:
-        crmSecurityService.runAs(user.username) { tenant = crmSecurityService.createTenant(account, "Default") }
-
-        then:
-        tenant != null
-        CrmRole.countByTenantId(tenant.id) == 3
-    }
 }
