@@ -16,7 +16,9 @@ This plugin contains common security features for Grails CRM.
 
 - Multi-tenancy (built-in)
 - User roles and permissions
-- Settings and Admin UI
 
 Authentication is done by specific plugins for each security implementation.
 For example crm-security-shiro that uses Apache Shiro for security.
+
+## Related plugins
+The crm-security-ui plugin provides user interface for managing application security.
