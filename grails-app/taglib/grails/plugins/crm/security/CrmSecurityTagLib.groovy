@@ -101,6 +101,24 @@ class CrmSecurityTagLib {
         }
     }
 
+    def lacksPermission = { attrs, body ->
+        def perm = attrs.permission
+        if (!perm) {
+            throwTagError("Tag [lacksPermission] is missing required attribute [permission]")
+        }
+        def ok = false
+        if (attrs.tenant) {
+            TenantUtils.withTenant(attrs.tenant) {
+                ok = crmSecurityService?.isPermitted(perm)
+            }
+        } else if (crmSecurityService?.isPermitted(perm)) {
+            ok = true
+        }
+        if (!ok) {
+            out << body()
+        }
+    }
+
     def permissionList = { attrs, body ->
         def permissions = attrs.permission ?: attrs.permissions
         if (!(permissions instanceof Collection)) {
@@ -197,7 +215,7 @@ class CrmSecurityTagLib {
     def isValidTenant = { attrs, body ->
         def tenant = attrs.tenant ?: TenantUtils.tenant
         def username = attrs.username ?: crmSecurityService.getCurrentUser()?.username
-        if(crmSecurityService.isValidTenant(tenant, username)) {
+        if (crmSecurityService.isValidTenant(tenant, username)) {
             out << body()
         }
     }

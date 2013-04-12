@@ -68,7 +68,7 @@ class CrmTenantSharingService {
 
     @Listener(namespace = "crmInvitation", topic = "accepted")
     def invitationAccepted(invitation) {
-        if(!invitation.ref?.startsWith('crmTenant@')) {
+        if (!invitation.ref?.startsWith('crmTenant@')) {
             return
         }
         def invitedUser = CrmUser.findByEmail(invitation.receiver)
@@ -77,23 +77,21 @@ class CrmTenantSharingService {
             def role = invitation.param
             log.debug("${invitation.sender} is inviting user $invitedUser to tenant $tenant as $role")
             if (tenant && role) {
-                crmSecurityService.runAs(invitation.sender) {
-                    TenantUtils.withTenant(tenant) {
-                        def expires = grailsApplication.config.crm.permission.expires ?: null
-                        try {
-                            crmSecurityService.addUserRole(invitedUser.username, role,
-                                    expires ? DateUtils.endOfWeek(expires) : null)
-                        } catch (CrmException e) {
-                            log.error("Invitation failed for [${invitedUser.username}]", e)
-                        } catch (Exception e) {
-                            log.error("Invitation failed for [${invitedUser.username}]", e)
-                        }
-                        if (!invitedUser.defaultTenant) {
-                            invitedUser.discard()
-                            invitedUser = CrmUser.lock(invitedUser.id)
-                            invitedUser.defaultTenant = tenant
-                            invitedUser.save(flush: true)
-                        }
+                crmSecurityService.runAs(invitation.sender, tenant) {
+                    def expires = grailsApplication.config.crm.permission.expires ?: null
+                    try {
+                        crmSecurityService.addUserRole(invitedUser.username, role,
+                                expires ? DateUtils.endOfWeek(expires) : null)
+                    } catch (CrmException e) {
+                        log.error("Invitation failed for [${invitedUser.username}]", e)
+                    } catch (Exception e) {
+                        log.error("Invitation failed for [${invitedUser.username}]", e)
+                    }
+                    if (!invitedUser.defaultTenant) {
+                        invitedUser.discard()
+                        invitedUser = CrmUser.lock(invitedUser.id)
+                        invitedUser.defaultTenant = tenant
+                        invitedUser.save(flush: true)
                     }
                 }
             }
