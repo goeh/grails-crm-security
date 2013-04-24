@@ -593,6 +593,9 @@ class CrmSecurityService {
 
         // Now lets nuke the tenant!
         crmAccount.removeFromTenants(crmTenant)
+
+        CrmTenantLog.findAllByTenantId(id)*.delete()
+
         crmTenant.delete()
 
         crmAccount.save(flush: true)
