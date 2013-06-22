@@ -108,7 +108,7 @@ class CrmAccount {
     }
 
     transient boolean isActive() {
-        if(isClosed()) {
+        if (isClosed()) {
             return false
         }
         if (expires == null) {
@@ -171,21 +171,31 @@ class CrmAccount {
         items?.find { it.productId == productId }
     }
 
-    void setItem(String productId, Integer quantity = 1) {
+    void setItem(String productId, Integer quantity = 1, String unit = 'st') {
         def i = getItem(productId)
         if (i) {
             i.quantity = quantity
         } else {
-            addToItems(new CrmAccountItem(productId: productId, quantity: quantity))
+            i = new CrmAccountItem(account: this, productId: productId, quantity: quantity, unit: unit)
+            if (i.validate()) {
+                addToItems(i)
+            } else {
+                log.error("Cannot add item [$productId] to account [$id] due to: ${i.errors.allErrors}")
+            }
         }
     }
 
-    int addItem(String productId, Integer quantity = 1) {
+    int addItem(String productId, Integer quantity = 1, String unit = 'st') {
         def i = getItem(productId)
         if (i) {
             i.quantity = i.quantity + quantity
         } else {
-            addToItems(new CrmAccountItem(productId: productId, quantity: quantity))
+            i = new CrmAccountItem(account: this, productId: productId, quantity: quantity, unit: unit)
+            if (i.validate()) {
+                addToItems(i)
+            } else {
+                log.error("Cannot add item [$productId] to account [$id] due to: ${i.errors.allErrors}")
+            }
         }
     }
 
