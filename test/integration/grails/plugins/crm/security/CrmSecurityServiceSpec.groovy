@@ -19,7 +19,6 @@ package grails.plugins.crm.security
 class CrmSecurityServiceSpec extends grails.plugin.spock.IntegrationSpec {
 
     def crmSecurityService
-    def crmAccountService
 
     def "runAs changes current user"() {
         def result
