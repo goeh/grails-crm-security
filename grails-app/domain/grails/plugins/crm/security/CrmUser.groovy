@@ -72,7 +72,7 @@ class CrmUser {
         permissions cascade: 'all-delete-orphan'
     }
 
-    static transients = ['dao', 'created', 'enabled', 'blocked']
+    static transients = ['dao', 'created', 'enabled', 'blocked', 'timezoneInstance']
 
     static searchable = {
         only = ['username', 'email', 'name', 'company']
@@ -137,12 +137,16 @@ class CrmUser {
             }
             m
         }
-        def tz = timezone ? TimeZone.getTimeZone(timezone) : TimeZone.getDefault()
+        def tz = getTimezoneInstance()
         map.timezone = tz
         map.roles = allRoles
         map.permissions = allPerm
         map.options = getOptionsMap()
         return map
+    }
+
+    TimeZone getTimezoneInstance() {
+        timezone ? TimeZone.getTimeZone(timezone) : TimeZone.getDefault()
     }
 
     /**
