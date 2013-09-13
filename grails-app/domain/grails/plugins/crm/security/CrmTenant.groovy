@@ -122,10 +122,15 @@ class CrmTenant {
         return o != null ? o.value : null
     }
 
+    boolean hasOption(String key) {
+        getOption(key)
+    }
+
     boolean removeOption(String key) {
         def o = options.find { it.key == key }
         if (o != null) {
             removeFromOptions(o)
+            o.delete()
             return true
         }
         return false
