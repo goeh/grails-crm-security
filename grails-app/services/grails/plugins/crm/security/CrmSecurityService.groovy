@@ -68,11 +68,15 @@ class CrmSecurityService {
      * @return whatever the closure returns
      */
     def runAs(String username, Closure closure) {
-        def user = CrmUser.findByUsernameAndStatus(username, CrmUser.STATUS_ACTIVE, [cache: true])
-        if (!user) {
+        if (CrmUser.createCriteria().count() {
+            eq('username', username)
+            eq('status', CrmUser.STATUS_ACTIVE)
+            cache true
+        }) {
+            crmSecurityDelegate.runAs(username, closure)
+        } else {
             throw new IllegalArgumentException("[$username] is not a valid user")
         }
-        crmSecurityDelegate.runAs(username, closure)
     }
 
     /**
@@ -84,12 +88,16 @@ class CrmSecurityService {
      * @return whatever the closure returns
      */
     def runAs(String username, Long tenant, Closure closure) {
-        def user = CrmUser.findByUsernameAndStatus(username, CrmUser.STATUS_ACTIVE, [cache: true])
-        if (!user) {
+        if (CrmUser.createCriteria().count() {
+            eq('username', username)
+            eq('status', CrmUser.STATUS_ACTIVE)
+            cache true
+        }) {
+            crmSecurityDelegate.runAs(username) {
+                TenantUtils.withTenant(tenant, closure)
+            }
+        } else {
             throw new IllegalArgumentException("[$username] is not a valid user")
-        }
-        crmSecurityDelegate.runAs(username) {
-            TenantUtils.withTenant(tenant, closure)
         }
     }
 
@@ -132,21 +140,10 @@ class CrmSecurityService {
     /**
      * Update an existing user.
      *
-     * @param username username
+     * @param user CrmUser instance
      * @param properties key/value pairs to update
-     * @return the updated CrmUser instance
      */
-    CrmUser updateUser(String username, Map<String, Object> props) {
-        if (!username) {
-            username = crmSecurityDelegate.currentUser
-            if (!username) {
-                throw new IllegalArgumentException("Can't update user [$username] because user is not authenticated")
-            }
-        }
-        def user = CrmUser.findByUsername(username)
-        if (!user) {
-            throw new IllegalArgumentException("[$username] is not a valid user")
-        }
+    void updateUser(CrmUser user, Map<String, Object> props) {
 
         def args = [user, props, [include: CrmUser.BIND_WHITELIST]]
         new BindDynamicMethod().invoke(user, 'bind', args.toArray())
@@ -159,8 +156,6 @@ class CrmSecurityService {
 
         // Use Spring Events plugin to broadcast that a user was updated.
         event(for: "crm", topic: "userUpdated", data: user.dao)
-
-        return user
     }
 
     /**
@@ -198,7 +193,7 @@ class CrmSecurityService {
             throw new IllegalArgumentException("[$username] is not a valid user")
         }
         def accounts = CrmAccount.countByUser(user)
-        if(accounts) {
+        if (accounts) {
             throw new IllegalArgumentException("A user [${user.username}] with [$accounts] active accounts cannot be deleted")
         }
 
@@ -720,7 +715,12 @@ class CrmSecurityService {
                 result.addAll(tmp)
             }
         }
-        result.toList()
+
+        if (!ignoreExpires) {
+            return result.findAll { CrmTenant.get(it).account.active }.toList()
+        } else {
+            return result.toList()
+        }
     }
 
     /**
@@ -774,7 +774,7 @@ class CrmSecurityService {
         perm.save(failOnError: true, flush: true)
     }
 
-    @Cacheable('permissions')
+    @Cacheable(value = 'permissions', key = '#name')
     List<String> getPermissionAlias(String name) {
         CrmNamedPermission.findByName(name, [cache: true])?.permissions?.toList() ?: []
     }
@@ -830,13 +830,9 @@ class CrmSecurityService {
         }
     }
 
-    CrmUserRole addUserRole(String username, String rolename, Date expires = null, Long tenant = null) {
+    CrmUserRole addUserRole(CrmUser user, String rolename, Date expires = null, Long tenant = null) {
         if (!tenant) {
             tenant = TenantUtils.getTenant()
-        }
-        def user = getEnabledUser(username)
-        if (!user) {
-            throw new IllegalArgumentException("Can't add role [$rolename] in tenant [$tenant] to user [$username] because user is not found")
         }
         def role = CrmRole.findByNameAndTenantId(rolename, tenant, [cache: true])
         if (!role) {
@@ -851,10 +847,12 @@ class CrmSecurityService {
         def userrole = CrmUserRole.findByUserAndRole(user, role, [cache: true])
         if (!userrole) {
             def expiryDate = expires != null ? new java.sql.Date(expires.clearTime().time) : null
-            user.discard()
-            user = CrmUser.lock(user.id)
-            user.addToRoles(userrole = new CrmUserRole(role: role, expires: expiryDate))
-            user.save(flush: true)
+            //user.discard()
+            //user = CrmUser.lock(user.id)
+            userrole = new CrmUserRole(user: user, role: role, expires: expiryDate)
+            if (userrole.validate()) {
+                user.addToRoles(userrole)
+            }
         }
         return userrole
     }
@@ -954,9 +952,9 @@ class CrmSecurityService {
     }
 
     List<Map<String, Object>> getTenantUsers(Long tenant = TenantUtils.tenant) {
-        getTenantPermissions(tenant).collect { it.user }.unique { it.username }.sort { it.username }.collect {
-            [id: it.id, guid: it.guid, username: it.username, name: it.name, email: it.email]
-        }
+        def result = event(for: "crmTenant", topic: "getUsers", data: [tenant: tenant]).values.flatten()
+        println "result=$result"
+        result
     }
 
     CrmRole updatePermissionsForRole(Long tenant = null, String rolename, List<String> permissions) {
