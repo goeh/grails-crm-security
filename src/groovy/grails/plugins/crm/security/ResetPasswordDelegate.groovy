@@ -16,6 +16,7 @@
 
 package grails.plugins.crm.security
 
+import groovy.transform.CompileStatic
 import org.apache.log4j.Logger
 
 /**
@@ -32,21 +33,20 @@ class ResetPasswordDelegate {
         def user = CrmUser.findByUsername(params.username)
         if (user) {
             log.debug "resetPassword: Verifying account ${user.username} - ${user.name} ---> $params"
-            if (!user.email.equalsIgnoreCase(params.email)) {
-                return null
+            for (field in grailsApplication.config.reset.password.step1.fields) {
+                if (!equalsIgnoreSpace(user[field], params[field])) {
+                    return null
+                }
             }
-            if (grailsApplication.config.reset.password.step1.fields?.contains('postalCode')
-                    && !equalsIgnoreSpace(user.postalCode, params.postalCode)) {
-                return null
-            }
-            return user.username
+            return [username: user.username, email: user.email, name: user.name]
         } else {
             log.warn "resetPassword: User [${params.username}] not found"
         }
         return null
     }
 
-    private boolean equalsIgnoreSpace(String arg1, String arg2) {
+    @CompileStatic
+    private boolean equalsIgnoreSpace(final String arg1, final String arg2) {
         if (arg1 && arg2) {
             return arg1.replaceAll(/\s/, '').equalsIgnoreCase(arg2.replaceAll(/\s/, ''))
         }
@@ -57,18 +57,23 @@ class ResetPasswordDelegate {
         return questions
     }
 
-    def resetPassword(String username, String password) {
+    boolean resetPassword(String username, String password) {
         log.debug "resetPassword: Changing password for [$username]"
-        crmSecurityService.updateUser(username, [password: password, status:CrmUser.STATUS_ACTIVE, loginFailures: 0])
-        return username
+        def user = crmSecurityService.getUser(username)
+        if (user) {
+            crmSecurityService.updateUser(user, [password: password, status: CrmUser.STATUS_ACTIVE, loginFailures: 0])
+            return true
+        }
+        return false
     }
 
-    def disableAccount(String username) {
+    boolean disableAccount(String username) {
         log.warn "resetPassword: Disabling account [$username]"
-        def user = CrmUser.findByUsername(username)
+        def user = crmSecurityService.getUser(username)
         if (user) {
-            user.status = CrmUser.STATUS_BLOCKED
-            user.save()
+            crmSecurityService.updateUser(user, [status: CrmUser.STATUS_BLOCKED])
+            return true
         }
+        return false
     }
 }
