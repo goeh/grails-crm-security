@@ -43,10 +43,11 @@ class CrmUser {
     Integer loginFailures = 0
     Long defaultTenant
 
+
+    public static final Integer STATUS_CLOSED = -2
+    public static final Integer STATUS_BLOCKED = -1
     public static final Integer STATUS_NEW = 0
     public static final Integer STATUS_ACTIVE = 1
-    public static final Integer STATUS_BLOCKED = -1
-    public static final Integer STATUS_CLOSED = -2
 
     static hasMany = [roles: CrmUserRole, permissions: CrmUserPermission, options: CrmUserOption]
 
@@ -93,19 +94,20 @@ class CrmUser {
      * Returns the username property.
      * @return username property
      */
+    @Override
     String toString() {
         username.toString()
     }
 
-    boolean isCreated() {
+    transient boolean isCreated() {
         status == STATUS_NEW
     }
 
-    boolean isEnabled() {
+    transient boolean isEnabled() {
         status == STATUS_ACTIVE
     }
 
-    boolean isBlocked() {
+    transient boolean isBlocked() {
         status == STATUS_BLOCKED
     }
 
@@ -145,7 +147,7 @@ class CrmUser {
         return map
     }
 
-    TimeZone getTimezoneInstance() {
+    transient TimeZone getTimezoneInstance() {
         timezone ? TimeZone.getTimeZone(timezone) : TimeZone.getDefault()
     }
 
@@ -182,15 +184,21 @@ class CrmUser {
         return o != null ? o.value : null
     }
 
+    boolean hasOption(String key) {
+        getOption(key)
+    }
+
     boolean removeOption(String key) {
         def o = options.find { it.key == key }
         if (o != null) {
             removeFromOptions(o)
+            o.delete()
             return true
         }
         return false
     }
 
+    @Override
     boolean equals(o) {
         if (this.is(o)) return true
         if (getClass() != o.class) return false
@@ -204,6 +212,7 @@ class CrmUser {
         return true
     }
 
+    @Override
     int hashCode() {
         int result
         result = (username != null ? username.hashCode() : 0)
