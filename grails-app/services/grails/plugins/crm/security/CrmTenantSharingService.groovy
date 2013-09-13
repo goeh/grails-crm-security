@@ -27,7 +27,6 @@ import org.codehaus.groovy.grails.web.mapping.LinkGenerator
  */
 class CrmTenantSharingService {
 
-    def crmCoreService
     def crmSecurityService
     def crmInvitationService
     def grailsApplication
@@ -43,25 +42,23 @@ class CrmTenantSharingService {
     @Listener(namespace = "crmTenant", topic = "share")
     def tenantShared(info) {
         crmSecurityService.runAs(info.user) {
-            TenantUtils.withTenant(info.id) {
-                def user = crmSecurityService.getUserInfo(info.user)
-                def tenant = crmSecurityService.getTenantInfo(info.id)
+            def crmTenant = crmSecurityService.getTenant(info.id)
+            TenantUtils.withTenant(crmTenant.id) {
                 def email = info.email
                 def message = info.message
 
-                log.info "${user.name} wants to share tenant ${tenant.name} with $email ($message)"
+                log.info "${info.user} wants to share tenant ${crmTenant.name} with $email ($message)"
 
-                def binding = [target: tenant, user: user, email: email, role: info.role, message: message]
-
+                def binding = [:]
+                binding.role = info.role
+                binding.message = message
                 binding.registerUrl = grailsLinkGenerator.link(mapping: 'crm-register', params: [email: email], absolute: true)
                 binding.loginUrl = grailsLinkGenerator.link(mapping: 'login', params: [username: email], absolute: true)
                 // Check if the invited email is already a registered user.
                 binding.existing = CrmUser.createCriteria().count() {
                     ilike('email', email)
                 }
-                def crmTenant = crmSecurityService.getTenant(info.id)
-                def reference = crmCoreService.getReferenceIdentifier(crmTenant)
-                crmInvitationService.createInvitation(reference, info.role, user.username, email, "account-invite-email", binding)
+                crmInvitationService.createInvitation(crmTenant, info.role, info.user, email, binding)
             }
         }
     }
@@ -80,18 +77,17 @@ class CrmTenantSharingService {
                 crmSecurityService.runAs(invitation.sender, tenant) {
                     def expires = grailsApplication.config.crm.permission.expires ?: null
                     try {
-                        crmSecurityService.addUserRole(invitedUser.username, role,
-                                expires ? DateUtils.endOfWeek(expires) : null)
+                        crmSecurityService.addUserRole(invitedUser, role, expires ? DateUtils.endOfWeek(expires) : null)
+                        if (!invitedUser.defaultTenant) {
+                            //invitedUser.discard()
+                            //invitedUser = CrmUser.lock(invitedUser.id)
+                            invitedUser.defaultTenant = tenant
+                        }
+                        invitedUser.save(flush: true)
                     } catch (CrmException e) {
                         log.error("Invitation failed for [${invitedUser.username}]", e)
                     } catch (Exception e) {
                         log.error("Invitation failed for [${invitedUser.username}]", e)
-                    }
-                    if (!invitedUser.defaultTenant) {
-                        invitedUser.discard()
-                        invitedUser = CrmUser.lock(invitedUser.id)
-                        invitedUser.defaultTenant = tenant
-                        invitedUser.save(flush: true)
                     }
                 }
             }
