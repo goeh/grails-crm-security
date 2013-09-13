@@ -139,5 +139,7 @@ class CrmTenantSpec extends grails.plugin.spock.IntegrationSpec {
         t.dao.options.foo == 42
         t.getOption("bar") == null
         t.dao.options.bar == null
+        t.hasOption("foo")
+        !t.hasOption("bar")
     }
 }
