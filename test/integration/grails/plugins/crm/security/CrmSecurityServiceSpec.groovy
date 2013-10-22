@@ -60,4 +60,20 @@ class CrmSecurityServiceSpec extends grails.plugin.spock.IntegrationSpec {
         thrown(Exception)
     }
 
+    def "permission alias"() {
+        when:
+        crmSecurityService.addPermissionAlias "test", ['test:show', 'test:list']
+        crmSecurityService.addPermissionAlias "foo", ['foo:*']
+        crmSecurityService.addPermissionAlias "bar", ['bar:*']
+
+        then:
+        crmSecurityService.getPermissionAlias("foo") == ['foo:*']
+        crmSecurityService.getPermissionAlias("bar") == ['bar:*']
+        crmSecurityService.getPermissionAlias("foo") == ['foo:*']
+        crmSecurityService.getPermissionAlias("bar") == ['bar:*']
+        crmSecurityService.removePermissionAlias "foo"
+        crmSecurityService.removePermissionAlias "bar"
+        !crmSecurityService.getPermissionAlias("foo")
+        !crmSecurityService.getPermissionAlias("bar")
+    }
 }

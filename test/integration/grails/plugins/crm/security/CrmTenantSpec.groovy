@@ -29,21 +29,21 @@ class CrmTenantSpec extends grails.plugin.spock.IntegrationSpec {
         def result
         def user = crmSecurityService.createUser([username: "test5", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
         def account = crmSecurityService.runAs(user.username) {
-            crmAccountService.createAccount(name: "My Account", telephone: "+46800000",
-                    address1: "Box 123", postalCode: "12345", city: "Capital", reference: "test")
+            crmAccountService.createAccount(name: "My Account", expires: new Date() + 30, status: CrmAccount.STATUS_TRIAL,
+                    telephone: "+46800000", address1: "Box 123", postalCode: "12345", city: "Capital", reference: "test")
         }
         when:
-        crmSecurityService.runAs(user.username) {
-            result = crmSecurityService.getTenants()
+        result = crmSecurityService.runAs(user.username) {
+            crmSecurityService.getTenants()
         }
         then:
         result.isEmpty()
 
         when:
-        crmSecurityService.runAs(user.username) {
+        result = crmSecurityService.runAs(user.username) {
             crmSecurityService.createTenant(account, "My First Tenant")
             crmSecurityService.createTenant(account, "My Second Tenant")
-            result = crmSecurityService.getTenants()
+            crmSecurityService.getTenants()
         }
         then:
         result.size() == 2
