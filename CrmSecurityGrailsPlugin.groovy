@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
+
 import grails.plugins.crm.security.ResetPasswordDelegate
 
 class CrmSecurityGrailsPlugin {
-    // Dependency group
     def groupId = "grails.crm"
-    // the plugin version
-    def version = "1.2.0"
-    // the version or versions of Grails the plugin is designed for
+    def version = "1.2.1"
     def grailsVersion = "2.2 > *"
-    // the other plugins this plugin depends on
     def dependsOn = [:]
-    // Load after crm-core
     def loadAfter = ['crmCore']
-    // resources that are excluded from plugin packaging
     def pluginExcludes = [
             "grails-app/views/error.gsp",
             "src/groovy/grails/plugins/crm/security/TestSecurityDelegate.groovy"
@@ -38,7 +33,7 @@ class CrmSecurityGrailsPlugin {
     def authorEmail = "goran@technipelago.se"
     def description = '''
 This plugin provides basic security feature for Grails CRM.
-Specific security implementeations exists for Apache Shiro (crm-security-shiro).
+Specific security implementations exists for Apache Shiro (crm-security-shiro).
 '''
 
     def documentation = "https://github.com/goeh/grails-crm-security"
