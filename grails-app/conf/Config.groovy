@@ -20,5 +20,6 @@ log4j = {
            'org.hibernate',
            'net.sf.ehcache.hibernate'
 
-    warn   'org.mortbay.log'
+    debug 'net.sf.ehcache'
+    debug 'grails.plugin.cache'
 }

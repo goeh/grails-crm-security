@@ -17,16 +17,18 @@
 package grails.plugins.crm.security
 
 import grails.events.Listener
-import grails.plugin.cache.CacheEvict
-import grails.plugin.cache.Cacheable
 import grails.plugins.crm.core.CrmException
 import grails.plugins.crm.core.CrmSecurityDelegate
 import grails.plugins.crm.core.TenantUtils
 import grails.plugins.crm.core.Pair
 import grails.plugins.crm.util.Graph
+import groovy.transform.CompileStatic
 import org.codehaus.groovy.grails.web.metaclass.BindDynamicMethod
 import org.codehaus.groovy.grails.web.util.WebUtils
 import org.grails.plugin.platform.events.EventMessage
+import org.springframework.cache.Cache
+import org.springframework.cache.CacheManager
+
 import javax.servlet.http.HttpServletRequest
 
 /**
@@ -34,12 +36,13 @@ import javax.servlet.http.HttpServletRequest
  */
 class CrmSecurityService {
 
-    static transactional = true
+    public static final String CRM_PERMISSION_CACHE = "permissions"
 
     def grailsApplication
     def crmFeatureService
 
     CrmSecurityDelegate crmSecurityDelegate
+    CacheManager grailsCacheManager
 
     /**
      * Checks if the current user is authenticated in this session.
@@ -297,9 +300,9 @@ class CrmSecurityService {
             if (!(permissions instanceof List)) {
                 permissions = [permissions]
             }
-
+            def proxy = grailsApplication.mainContext.crmSecurityService
             def alias = "${feature}.$roleName".toString()
-            addPermissionAlias(alias, permissions)
+            proxy.addPermissionAlias(alias, permissions)
             addPermissionIfMissing(role, alias)
             if (roleName == 'admin') {
                 addPermissionIfMissing(role, "crmTenant:*:$tenant".toString())
@@ -601,6 +604,8 @@ class CrmSecurityService {
         return true
     }
 
+    // TODO Move this alert() method to somewhere else! Why not send the event directly from calling code?
+    // I don't like the dependency on HttpServletRequest in a service class.
     void alert(HttpServletRequest request, String topic, String message = null) {
         log.warn "SECURITY ALERT! $topic ${message ?: ''} [uri=${WebUtils.getForwardURI(request)}, ip=${request.remoteAddr}, tenant=${TenantUtils.tenant}, session=${request.session?.id}]"
         def user
@@ -648,43 +653,19 @@ class CrmSecurityService {
         return arg.toString() == username
     }
 
-    private List<Long> getAllTenants(String username = null, Boolean ignoreExpires) {
-        if (!username) {
-            username = crmSecurityDelegate.currentUser
-            if (!username) {
-                throw new IllegalArgumentException("not authenticated")
-            }
+    private List<Long> getAllTenants(final String username, Boolean ignoreExpires) {
+        final CrmUser user = getEnabledUser(username)
+        if (!user) {
+            return Collections.EMPTY_SET
         }
-        def today = new java.sql.Date(new Date().clearTime().time)
-        def result = new HashSet<Long>()
-        def user = getEnabledUser(username)
-        if (user) {
-            // Owned tenants
-            def tmp = CrmTenant.createCriteria().list() {
-                projections {
-                    property('id')
-                }
-                account {
-                    eq('user', user)
-                    if (!ignoreExpires) {
-                        or {
-                            isNull('expires')
-                            ge('expires', today)
-                        }
-                    }
-                }
-                cache true
+        final Date today = new java.sql.Date(new Date().clearTime().time)
+        final Set result = new HashSet<Long>()
+        // Owned tenants
+        def tmp = CrmTenant.createCriteria().list() {
+            projections {
+                property('id')
             }
-            if (tmp) {
-                result.addAll(tmp)
-            }
-            // Role tenants
-            tmp = CrmUserRole.createCriteria().list() {
-                projections {
-                    role {
-                        property('tenantId')
-                    }
-                }
+            account {
                 eq('user', user)
                 if (!ignoreExpires) {
                     or {
@@ -692,35 +673,50 @@ class CrmSecurityService {
                         ge('expires', today)
                     }
                 }
-                cache true
             }
-            if (tmp) {
-                result.addAll(tmp)
-            }
-            // Permission tenants
-            tmp = CrmUserPermission.createCriteria().list() {
-                projections {
+            cache true
+        }
+        if (tmp) {
+            result.addAll(tmp)
+        }
+        // Role tenants
+        tmp = CrmUserRole.createCriteria().list() {
+            projections {
+                role {
                     property('tenantId')
                 }
-                eq('user', user)
-                if (!ignoreExpires) {
-                    or {
-                        isNull('expires')
-                        ge('expires', today)
-                    }
+            }
+            eq('user', user)
+            if (!ignoreExpires) {
+                or {
+                    isNull('expires')
+                    ge('expires', today)
                 }
-                cache true
             }
-            if (tmp) {
-                result.addAll(tmp)
+            cache true
+        }
+        if (tmp) {
+            result.addAll(tmp)
+        }
+        // Permission tenants
+        tmp = CrmUserPermission.createCriteria().list() {
+            projections {
+                property('tenantId')
             }
+            eq('user', user)
+            if (!ignoreExpires) {
+                or {
+                    isNull('expires')
+                    ge('expires', today)
+                }
+            }
+            cache true
+        }
+        if (tmp) {
+            result.addAll(tmp)
         }
 
-        if (!ignoreExpires) {
-            return result.findAll { CrmTenant.get(it).account.active }.toList()
-        } else {
-            return result.toList()
-        }
+        ignoreExpires ? result.toList() : result.findAll { CrmTenant.get(it).account.active }.toList()
     }
 
     /**
@@ -760,8 +756,7 @@ class CrmSecurityService {
      * @param name name of permission
      * @param permissions List of  Wildcard permission strings
      */
-    @CacheEvict(value = 'permissions', key = '#name')
-    void addPermissionAlias(String name, List<String> permissions) {
+    void addPermissionAlias(final String name, final List<String> permissions) {
         def perm = CrmNamedPermission.findByName(name)
         if (!perm) {
             perm = new CrmNamedPermission(name: name)
@@ -774,19 +769,30 @@ class CrmSecurityService {
         perm.save(failOnError: true, flush: true)
     }
 
-    @Cacheable(value = 'permissions', key = '#name')
-    List<String> getPermissionAlias(String name) {
-        CrmNamedPermission.findByName(name, [cache: true])?.permissions?.toList() ?: []
+    List getPermissionAlias(String name) {
+        final Cache cache = grailsCacheManager.getCache(CRM_PERMISSION_CACHE)
+        List result = cache.get(name)?.get()
+        if (result == null) {
+            println "Cache miss for permission $name"
+            result = CrmNamedPermission.findByName(name)?.permissions?.toList() ?: Collections.EMPTY_LIST
+            cache.put(name, result)
+        }
+        return result
     }
 
-    @CacheEvict(value = 'permissions', key = '#name')
-    boolean removePermissionAlias(String name) {
+    boolean removePermissionAlias(final String name) {
+        clearPermissionCache()
         def perm = CrmNamedPermission.findByName(name)
         if (perm) {
             perm.delete()
             return true
         }
         return false
+    }
+
+    @CompileStatic
+    void clearPermissionCache() {
+        grailsCacheManager.getCache(CRM_PERMISSION_CACHE).clear()
     }
 
     /**

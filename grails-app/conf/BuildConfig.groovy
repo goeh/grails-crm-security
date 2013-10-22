@@ -8,9 +8,9 @@ grails.project.dependency.resolution = {
     legacyResolve false
     repositories {
         grailsHome()
-        grailsCentral()
         mavenRepo "http://labs.technipelago.se/repo/crm-releases-local/"
         mavenRepo "http://labs.technipelago.se/repo/plugins-releases-local/"
+        grailsCentral()
         mavenCentral()
     }
     dependencies {
@@ -32,7 +32,11 @@ grails.project.dependency.resolution = {
         test(":code-coverage:1.2.6") { export = false }
 
         compile(":platform-core:1.0.RC5") { excludes 'resources' }
-        compile ":cache:1.0.1"
+        compile ":cache:1.1.1"
+        test(":cache-ehcache:1.0.0") {
+            excludes 'cache'
+            export = false
+        }
         runtime ":simple-captcha:0.8.5"
 
         compile "grails.crm:crm-core:latest.integration"
