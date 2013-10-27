@@ -23,7 +23,11 @@ class CrmSecurityTagLibTests {
 
     void testUserIsNotAuthenticated() {
         def taglib = applicationContext.getBean(CrmSecurityTagLib)
-        taglib.crmSecurityService = [isAuthenticated: { false }, getCurrentUser: { new CrmUser() }]
+        taglib.crmSecurityService = [
+                isAuthenticated: { false },
+                getCurrentUser: { new CrmUser() },
+                getUserInfo: { uname -> [username: uname, name: uname?.toUpperCase()]}
+        ]
         // Make sure tag returns nothing since we are not logged in.
         assert applyTemplate("<crm:user>\${username}</crm:user>") == ""
     }
@@ -33,7 +37,7 @@ class CrmSecurityTagLibTests {
         taglib.crmSecurityService = [
                 isAuthenticated: { true },
                 getCurrentUser: { new CrmUser(username: "test", name: "Test User") },
-                getUserInfo: { uname -> [username: uname, name: uname.toUpperCase()] }
+                getUserInfo: { uname -> [username: "test", name: "Test User"] }
         ]
         // Make sure tag returns the principal since we are logged in.
         assert applyTemplate("<crm:user>\${username}</crm:user>") == "test"

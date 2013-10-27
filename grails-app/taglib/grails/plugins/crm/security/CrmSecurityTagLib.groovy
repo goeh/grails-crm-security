@@ -33,8 +33,7 @@ class CrmSecurityTagLib {
      * @attr username render tag body if user exists
      */
     def noUser = { attrs, body ->
-        def username = attrs.username ?: crmSecurityService?.getCurrentUser()?.username
-        def principal = username ? crmSecurityService?.getUserInfo(username) : null
+        def principal = crmSecurityService.getUserInfo(attrs.username)
         if (!principal) {
             out << body()
         }
@@ -47,17 +46,16 @@ class CrmSecurityTagLib {
      * @attr username render tag body if user exists
      */
     def user = { attrs, body ->
-        def username = attrs.username ?: crmSecurityService?.getCurrentUser()?.username
-        def principal = username ? crmSecurityService?.getUserInfo(username) : null
+        def principal = crmSecurityService.getUserInfo(attrs.username)
         if (principal) {
-            out << body(principal as Map)
+            out << body(principal)
         } else if (attrs.nouser) {
             out << attrs.nouser.toString()
         }
     }
 
     def noTenant = { attrs, body ->
-        def tenant = crmSecurityService?.getCurrentTenant()
+        def tenant = crmSecurityService.getCurrentTenant()
         if (!tenant) {
             out << body()
         }
@@ -65,7 +63,7 @@ class CrmSecurityTagLib {
 
     def tenant = { attrs, body ->
         CrmTenant.withTransaction {
-            def tenant = crmSecurityService?.getCurrentTenant()
+            def tenant = crmSecurityService.getCurrentTenant()
             if (tenant) {
                 out << body(tenant.dao)
             }
@@ -73,7 +71,7 @@ class CrmSecurityTagLib {
     }
 
     def eachTenant = { attrs, body ->
-        def list = crmSecurityService?.getTenants()
+        def list = crmSecurityService.getTenants()
         list.eachWithIndex { s, i ->
             def map = [(attrs.var ?: 'it'): s]
             if (attrs.status) {
@@ -91,9 +89,9 @@ class CrmSecurityTagLib {
         def ok = false
         if (attrs.tenant) {
             TenantUtils.withTenant(attrs.tenant) {
-                ok = crmSecurityService?.isPermitted(perm)
+                ok = crmSecurityService.isPermitted(perm)
             }
-        } else if (crmSecurityService?.isPermitted(perm)) {
+        } else if (crmSecurityService.isPermitted(perm)) {
             ok = true
         }
         if (ok) {
@@ -109,9 +107,9 @@ class CrmSecurityTagLib {
         def ok = false
         if (attrs.tenant) {
             TenantUtils.withTenant(attrs.tenant) {
-                ok = crmSecurityService?.isPermitted(perm)
+                ok = crmSecurityService.isPermitted(perm)
             }
-        } else if (crmSecurityService?.isPermitted(perm)) {
+        } else if (crmSecurityService.isPermitted(perm)) {
             ok = true
         }
         if (!ok) {
@@ -195,7 +193,7 @@ class CrmSecurityTagLib {
             return
         }
         def id = attrs.tenant ? Long.valueOf(attrs.tenant.toString()) : TenantUtils.tenant
-        def tenant = crmSecurityService?.getTenant(id)
+        def tenant = crmSecurityService.getTenant(id)
         if (tenant) {
             def value = tenant.getOption(option)
             def render = false
