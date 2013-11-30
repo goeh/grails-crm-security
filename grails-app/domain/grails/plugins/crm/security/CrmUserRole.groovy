@@ -30,18 +30,31 @@ class CrmUserRole {
     java.sql.Date expires
     static belongsTo = [user: CrmUser]
     static constraints = {
-        role(validator: {val, obj->
+        role(validator: { val, obj ->
             def accountExpires = CrmAccount.withNewSession { CrmTenant.get(obj.role?.tenantId)?.account?.expires }
             if (obj.expires && accountExpires && obj.expires > accountExpires) {
                 return ['expires.after.account', obj.expires, accountExpires]
             }
             return null
         })
-        expires(nullable:true)
+        expires(nullable: true)
     }
     static mapping = {
         table 'crm_user_role'
     }
+    static transients = ['tenantId']
+
+    /**
+     * Return tenantId of the associated CrmRole.
+     * This method exists primarily to make it easy to get Tenant ID from CrmUserRole and CrmUserPermission
+     * in the same way, by calling getTenantId()
+     * @return Tenant ID or null if role is null
+     * @since 1.2.3
+     */
+    transient Long getTenantId() {
+        role?.tenantId
+    }
+
     String toString() {
         role.toString()
     }
