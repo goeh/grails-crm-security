@@ -166,18 +166,15 @@ class CrmAccountService {
                     inList('tenantId', tenants)
                 }
             }
-            for (r in roles) {
-                r.expires = yesterday
-                r.save(failOnError: true)
-            }
+            roles*.delete()
             def permissions = CrmUserPermission.createCriteria().list() {
                 inList('tenantId', tenants)
             }
-            for (p in permissions) {
-                p.expires = yesterday
-                p.save(failOnError: true)
-            }
+            permissions*.delete()
         }
+        // Use platform-core events to broadcast that the account was closed.
+        // Receivers could remove or reset any data associated with the account.
+        event(for: "crm", topic: "accountClosed", data: crmAccount.dao)
     }
 
     void deleteAccount(CrmAccount crmAccount) {
