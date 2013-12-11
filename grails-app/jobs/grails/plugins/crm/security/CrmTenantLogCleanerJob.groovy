@@ -30,12 +30,14 @@ class CrmTenantLogCleanerJob {
     def crmTenantLogService
 
     def execute() {
-        def offset = grailsApplication.config.crm.tenant.log.clean ?: 30
-        def date = new Date() - offset
-        def result = crmTenantLogService.list([to: date], [max: 1000])
-        if (result.size()) {
-            log.info "Deleting ${result.size()} tenant log events before ${date}"
-            result*.delete()
+        if (grailsApplication.config.crm.security.job.logcleaner.enabled) {
+            def offset = grailsApplication.config.crm.tenant.log.clean ?: 30
+            def date = new Date() - offset
+            def result = crmTenantLogService.list([to: date], [max: 1000])
+            if (result.size()) {
+                log.info "Deleting ${result.size()} tenant log events before ${date}"
+                result*.delete()
+            }
         }
     }
 }
