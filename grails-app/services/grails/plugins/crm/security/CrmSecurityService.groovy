@@ -773,7 +773,6 @@ class CrmSecurityService {
         final Cache cache = grailsCacheManager.getCache(CRM_PERMISSION_CACHE)
         List result = cache.get(name)?.get()
         if (result == null) {
-            println "Cache miss for permission $name"
             result = CrmNamedPermission.findByName(name)?.permissions?.toList() ?: Collections.EMPTY_LIST
             cache.put(name, result)
         }
