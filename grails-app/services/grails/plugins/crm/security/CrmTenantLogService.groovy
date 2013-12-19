@@ -58,4 +58,29 @@ class CrmTenantLogService {
             }
         }
     }
+
+    /**
+     * Return timestamp for last logged event.
+     *
+     * @param tenant tenant ID or null for all tenants
+     * @param username username or null for all users
+     * @param category category (for example 'login') or null for all categories
+     * @return timestamp or null if no such event
+     */
+    Date getLastEvent(Long tenant, String username, String category) {
+        CrmTenantLog.createCriteria().get() {
+            if (tenant) {
+                eq('tenantId', tenant)
+            }
+            if (username) {
+                eq('username', username)
+            }
+            if (category) {
+                eq('category', category)
+            }
+            order 'timestamp', 'desc'
+            maxResults 1
+            cache true
+        }?.timestamp
+    }
 }
