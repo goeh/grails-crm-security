@@ -123,7 +123,7 @@ class CrmSecurityTagLib {
             permissions = [permissions]
         }
         int i = 0
-        for (p in permissions) {
+        for (p in permissions.sort()) {
             def map = [(attrs.var ?: 'it'): [label: message(code: p, default: p), permission: p]]
             if (attrs.status) {
                 map[attrs.status] = i++
