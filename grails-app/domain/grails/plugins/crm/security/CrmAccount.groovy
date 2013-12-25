@@ -114,8 +114,7 @@ class CrmAccount {
         if (expires == null) {
             return true
         }
-        def today = new java.sql.Date(new Date().clearTime().time)
-        return expires > today
+        return expires >= new java.sql.Date(new Date().clearTime().time)
     }
 
     transient boolean isClosed() {
