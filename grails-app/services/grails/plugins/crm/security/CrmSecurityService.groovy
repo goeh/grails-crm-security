@@ -656,7 +656,7 @@ class CrmSecurityService {
     private List<Long> getAllTenants(final String username, Boolean ignoreExpires) {
         final CrmUser user = getEnabledUser(username)
         if (!user) {
-            return Collections.EMPTY_SET
+            return Collections.EMPTY_LIST
         }
         final Date today = new java.sql.Date(new Date().clearTime().time)
         final Set result = new HashSet<Long>()
