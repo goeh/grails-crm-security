@@ -17,7 +17,7 @@
 package grails.plugins.crm.security
 
 /**
- * Created by goran on 2014-01-20.
+ * A service for getting and settings theme parameters.
  */
 class CrmThemeService {
 
