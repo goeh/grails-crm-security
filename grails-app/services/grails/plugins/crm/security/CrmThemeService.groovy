@@ -27,6 +27,22 @@ class CrmThemeService {
     def grailsApplication
     def crmSecurityService
 
+    void setThemeForAccount(Long account, String themeName) {
+        def crmAccount = CrmAccount.get(account)
+        if (!crmAccount) {
+            throw new IllegalArgumentException("No such account: $account")
+        }
+        crmAccount.setOption(OPTION_THEME_NAME, themeName)
+    }
+
+    void setThemeForTenant(Long tenant, String themeName) {
+        def crmTenant = CrmTenant.get(tenant)
+        if (!crmTenant) {
+            throw new IllegalArgumentException("No such tenant: $tenant")
+        }
+        crmTenant.setOption(OPTION_THEME_NAME, themeName)
+    }
+
     String getThemeName(Long tenant) {
         def crmTenant = CrmTenant.get(tenant)
         if (!crmTenant) {
@@ -45,6 +61,22 @@ class CrmThemeService {
 
         def config = grailsApplication.config.crm.theme.name
         return config ? config.toString() : null
+    }
+
+    void setEmailSenderForAccount(Long account, String email) {
+        def crmAccount = CrmAccount.get(account)
+        if (!crmAccount) {
+            throw new IllegalArgumentException("No such account: $account")
+        }
+        crmAccount.setOption(OPTION_EMAIL_FROM, email)
+    }
+
+    void setEmailSenderForTenant(Long tenant, String email) {
+        def crmTenant = CrmTenant.get(tenant)
+        if (!crmTenant) {
+            throw new IllegalArgumentException("No such tenant: $tenant")
+        }
+        crmTenant.setOption(OPTION_EMAIL_FROM, email)
     }
 
     String getEmailSender(Long tenant, String configKey = null) {

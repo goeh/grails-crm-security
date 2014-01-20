@@ -45,26 +45,26 @@ class CrmThemeServiceSpec extends grails.plugin.spock.IntegrationSpec {
         crmThemeService.getThemeName(tenant.id) == 'foo'
 
         when:
-        tenant.account.setOption('theme.name', 'bar')
+        crmThemeService.setThemeForAccount(tenant.accountId, 'bar')
 
         then:
         crmThemeService.getThemeName(tenant.id) == 'bar'
 
         when:
-        tenant.setOption('theme.name', 'baz')
+        crmThemeService.setThemeForTenant(tenant.id, 'baz')
 
         then:
         crmThemeService.getThemeName(tenant.id) == 'baz'
 
 
         when:
-        tenant.setOption('theme.name', null)
+        crmThemeService.setThemeForTenant(tenant.id, null)
 
         then:
         crmThemeService.getThemeName(tenant.id) == 'bar'
 
         when:
-        tenant.account.setOption('theme.name', null)
+        crmThemeService.setThemeForAccount(tenant.accountId, null)
 
         then:
         crmThemeService.getThemeName(tenant.id) == 'foo'
@@ -90,25 +90,25 @@ class CrmThemeServiceSpec extends grails.plugin.spock.IntegrationSpec {
         crmThemeService.getEmailSender(tenant.id) == 'info@test.com'
 
         when:
-        tenant.account.setOption('mail.from', 'account@test.com')
+        crmThemeService.setEmailSenderForAccount(tenant.accountId, 'account@test.com')
 
         then:
         crmThemeService.getEmailSender(tenant.id) == 'Theme Account <account@test.com>'
 
         when:
-        tenant.account.setOption('mail.from', 'My Account <account@test.com>')
+        crmThemeService.setEmailSenderForAccount(tenant.accountId, 'My Account <account@test.com>')
 
         then:
         crmThemeService.getEmailSender(tenant.id) == 'My Account <account@test.com>'
 
         when:
-        tenant.setOption('mail.from', 'tenant@test.com')
+        crmThemeService.setEmailSenderForTenant(tenant.id, 'tenant@test.com')
 
         then:
         crmThemeService.getEmailSender(tenant.id) == 'Theme Tenant <tenant@test.com>'
 
         when:
-        tenant.setOption('mail.from', 'My Tenant <tenant@test.com>')
+        crmThemeService.setEmailSenderForTenant(tenant.id, 'My Tenant <tenant@test.com>')
 
         then:
         crmThemeService.getEmailSender(tenant.id) == 'My Tenant <tenant@test.com>'
