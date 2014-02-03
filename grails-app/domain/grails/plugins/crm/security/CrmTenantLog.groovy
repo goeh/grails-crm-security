@@ -36,7 +36,6 @@ class CrmTenantLog {
 
     static mapping = {
         sort 'timestamp': 'desc'
-        cache usage: 'read-only' //'nonstrict-read-write'
         tenantId index: 'category_idx'
         username index: 'category_idx'
         category index: 'category_idx'
