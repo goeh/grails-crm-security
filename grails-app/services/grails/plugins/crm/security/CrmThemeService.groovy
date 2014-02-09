@@ -114,4 +114,50 @@ class CrmThemeService {
         }
         return config ? config.toString() : null
     }
+
+    void setLogoForAccount(Long account, String size, String path) {
+        if(size == null) {
+            throw new IllegalArgumentException("logo size cannot be null")
+        }
+        def crmAccount = CrmAccount.get(account)
+        if (!crmAccount) {
+            throw new IllegalArgumentException("No such account: $account")
+        }
+        crmAccount.setOption('logo.' + size, path)
+    }
+
+    void setLogoForTenant(Long tenant, String size, String path) {
+        if(size == null) {
+            throw new IllegalArgumentException("logo size cannot be null")
+        }
+        def crmTenant = CrmTenant.get(tenant)
+        if (!crmTenant) {
+            throw new IllegalArgumentException("No such tenant: $tenant")
+        }
+        crmTenant.setOption('logo.' + size, path)
+    }
+
+    String getLogo(Long tenant, String size = 'medium') {
+        def crmTenant = CrmTenant.get(tenant)
+        if (!crmTenant) {
+            throw new IllegalArgumentException("No such tenant: $tenant")
+        }
+        def path = crmTenant.getOption('logo.' + size)
+        if(!path) {
+            def crmAccount = crmTenant.account
+            path = crmAccount.getOption('logo.' + size)
+            if (!path) {
+                path = grailsApplication.config.crm.theme.logo."$size"
+            }
+        }
+        path ?: null
+    }
+
+    File getLogoFile(Long tenant, String size = 'medium') {
+        String path = getLogo(tenant, size)
+        if(path) {
+            return grailsApplication.mainContext.getResource(path)?.getFile()
+        }
+        return null
+    }
 }

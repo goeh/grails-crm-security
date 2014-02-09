@@ -113,4 +113,62 @@ class CrmThemeServiceSpec extends grails.plugin.spock.IntegrationSpec {
         then:
         crmThemeService.getEmailSender(tenant.id) == 'My Tenant <tenant@test.com>'
     }
+
+    def "get custom logo"() {
+        when:
+        def user = crmSecurityService.createUser([username: "logotester", name: "Theme Logo Tester", email: "logo@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
+        CrmTenant tenant = crmSecurityService.runAs(user.username) {
+            def account = crmAccountService.createAccount(name: "Logo Account", expires: new Date() + 30, status: CrmAccount.STATUS_TRIAL,
+                    telephone: "+46800000", address1: "Box 123", postalCode: "12345", city: "Capital", reference: "test")
+            crmSecurityService.createTenant(account, "Logo Tenant")
+        }
+
+        then:
+        crmThemeService.getLogo(tenant.id) == null
+
+        when:
+        grailsApplication.config.crm.theme.logo.medium = '/images/logo-medium.png'
+
+        then:
+        crmThemeService.getLogo(tenant.id) == '/images/logo-medium.png'
+
+        when:
+        crmThemeService.setLogoForAccount(tenant.accountId, 'medium', '/images/logo-foo.png')
+
+        then:
+        crmThemeService.getLogo(tenant.id) == '/images/logo-foo.png'
+
+        when:
+        crmThemeService.setLogoForTenant(tenant.id, 'medium', '/images/logo-bar.png')
+
+        then:
+        crmThemeService.getLogo(tenant.id) == '/images/logo-bar.png'
+
+        when:
+        crmThemeService.setLogoForTenant(tenant.id, 'large', '/images/logo-bar-large.png')
+
+        then:
+        crmThemeService.getLogo(tenant.id, 'small') == null
+        crmThemeService.getLogo(tenant.id) == '/images/logo-bar.png'
+        crmThemeService.getLogo(tenant.id, 'large') == '/images/logo-bar-large.png'
+
+        when:
+        crmThemeService.setLogoForTenant(tenant.id, 'large', null)
+
+        then:
+        crmThemeService.getLogo(tenant.id) == '/images/logo-bar.png'
+
+        when:
+        crmThemeService.setLogoForTenant(tenant.id, 'medium', null)
+
+        then:
+        crmThemeService.getLogo(tenant.id) == '/images/logo-foo.png'
+
+        when:
+        crmThemeService.setLogoForAccount(tenant.accountId, 'medium', null)
+
+        then:
+        crmThemeService.getLogo(tenant.id) == '/images/logo-medium.png'
+        crmThemeService.getLogoFile(tenant.id).name == 'logo-medium.png'
+    }
 }
