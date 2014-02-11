@@ -44,7 +44,7 @@ class CrmThemeService {
     Long getTenantForTheme(String themeName) {
         Long t = themeTenants[themeName]
 
-        if(t != null) {
+        if (t != null) {
             return t
         }
 
@@ -57,11 +57,11 @@ class CrmThemeService {
             maxResults 1
         }
 
-        if(t == null) {
+        if (t == null) {
             t = grailsApplication.config.crm.theme.tenant."$themeName" ?: null
         }
 
-        if(t != null) {
+        if (t != null) {
             themeTenants[themeName] = t
         }
 
@@ -75,7 +75,7 @@ class CrmThemeService {
      * @return the tenant ID of a "theme tenant"
      */
     Long getThemeTenant(Long tenant = null) {
-        if(tenant == null) {
+        if (tenant == null) {
             tenant = TenantUtils.tenant
         }
         String theme = getThemeName(tenant)
@@ -101,21 +101,22 @@ class CrmThemeService {
     }
 
     String getThemeName(Long tenant) {
-        def crmTenant = CrmTenant.get(tenant)
-        if (!crmTenant) {
-            throw new IllegalArgumentException("No such tenant: $tenant")
-        }
-        def opt = crmTenant.getOption(OPTION_THEME_NAME)
-        if (opt) {
-            return opt.toString()
-        }
+        if (tenant) {
+            def crmTenant = CrmTenant.get(tenant)
+            if (!crmTenant) {
+                throw new IllegalArgumentException("No such tenant: $tenant")
+            }
+            def opt = crmTenant.getOption(OPTION_THEME_NAME)
+            if (opt) {
+                return opt.toString()
+            }
 
-        def crmAccount = crmTenant.account
-        opt = crmAccount.getOption(OPTION_THEME_NAME)
-        if (opt) {
-            return opt.toString()
+            def crmAccount = crmTenant.account
+            opt = crmAccount.getOption(OPTION_THEME_NAME)
+            if (opt) {
+                return opt.toString()
+            }
         }
-
         def config = grailsApplication.config.crm.theme.name
         return config ? config.toString() : null
     }
