@@ -16,6 +16,8 @@
 
 package grails.plugins.crm.security
 
+import grails.plugins.crm.core.TenantUtils
+
 /**
  * A service for getting and settings theme parameters.
  */
@@ -40,7 +42,44 @@ class CrmThemeService {
     }
 
     Long getTenantForTheme(String themeName) {
-        themeTenants[themeName] ?: (grailsApplication.config.crm.theme.tenant."$themeName" ?: null)
+        Long t = themeTenants[themeName]
+
+        if(t != null) {
+            return t
+        }
+
+        t = CrmTenantOption.createCriteria().get() {
+            projections {
+                property('tenant.id')
+            }
+            eq('key', OPTION_THEME_NAME)
+            eq('v', themeName)
+            maxResults 1
+        }
+
+        if(t == null) {
+            t = grailsApplication.config.crm.theme.tenant."$themeName" ?: null
+        }
+
+        if(t != null) {
+            themeTenants[themeName] = t
+        }
+
+        return t
+    }
+
+    /**
+     * Return the tenant that is managing the specified tenant's theme.
+     *
+     * @param tenant the current tenant
+     * @return the tenant ID of a "theme tenant"
+     */
+    Long getThemeTenant(Long tenant = null) {
+        if(tenant == null) {
+            tenant = TenantUtils.tenant
+        }
+        String theme = getThemeName(tenant)
+        return theme ? getTenantForTheme(theme) : null
     }
 
     void setThemeForAccount(Long account, String themeName) {
