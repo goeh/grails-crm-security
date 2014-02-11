@@ -62,4 +62,14 @@ class CrmUserService {
             }
         }
     }
+
+    CrmUser findUserByEmail(String email, boolean allowDuplicates = false) {
+        def result = CrmUser.findAllByEmail(email, [cache: true])
+        if (result.size() == 0) {
+            return null
+        } else if ((result.size() == 1) || allowDuplicates) {
+            return result.find { it }
+        }
+        throw new IllegalStateException("Found ${result.size()} users with email [$email]")
+    }
 }
