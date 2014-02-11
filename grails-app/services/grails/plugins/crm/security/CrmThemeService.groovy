@@ -27,12 +27,29 @@ class CrmThemeService {
     def grailsApplication
     def crmSecurityService
 
+    private static final Map<String, Long> themeTenants = [:]
+
+    void registerThemeTenant(String themeName, Long tenant) {
+        if (tenant != null) {
+            themeTenants[themeName] = tenant
+            log.debug "Tenant [$tenant] is now registered as manager for theme [$themeName]"
+        } else {
+            themeTenants.remove(themeName)
+            log.debug "Theme [$themeName] is no longer managed by a tenant"
+        }
+    }
+
+    Long getTenantForTheme(String themeName) {
+        themeTenants[themeName] ?: (grailsApplication.config.crm.theme.tenant."$themeName" ?: null)
+    }
+
     void setThemeForAccount(Long account, String themeName) {
         def crmAccount = CrmAccount.get(account)
         if (!crmAccount) {
             throw new IllegalArgumentException("No such account: $account")
         }
         crmAccount.setOption(OPTION_THEME_NAME, themeName)
+        log.debug "Account #$account [$crmAccount.name] is now using theme [$themeName]"
     }
 
     void setThemeForTenant(Long tenant, String themeName) {
@@ -41,6 +58,7 @@ class CrmThemeService {
             throw new IllegalArgumentException("No such tenant: $tenant")
         }
         crmTenant.setOption(OPTION_THEME_NAME, themeName)
+        log.debug "Tenant #$tenant [$crmTenant.name] is now using theme [$themeName]"
     }
 
     String getThemeName(Long tenant) {
@@ -69,6 +87,7 @@ class CrmThemeService {
             throw new IllegalArgumentException("No such account: $account")
         }
         crmAccount.setOption(OPTION_EMAIL_FROM, email)
+        log.debug "Account #$account [$crmAccount.name] is now using [$email] as email sender"
     }
 
     void setEmailSenderForTenant(Long tenant, String email) {
@@ -77,6 +96,7 @@ class CrmThemeService {
             throw new IllegalArgumentException("No such tenant: $tenant")
         }
         crmTenant.setOption(OPTION_EMAIL_FROM, email)
+        log.debug "Tenant #$tenant [$crmTenant.name] is now using [$email] as email sender"
     }
 
     String getEmailSender(Long tenant, String configKey = null) {
@@ -89,9 +109,8 @@ class CrmThemeService {
             def addr = opt.toString()
             if (addr.contains('<')) {
                 return addr
-            } else {
-                return "${crmTenant.name} <${addr}>".toString()
             }
+            return "${crmTenant.name} <${addr}>".toString()
         }
 
         def crmAccount = crmTenant.account
@@ -100,9 +119,8 @@ class CrmThemeService {
             def addr = opt.toString()
             if (addr.contains('<')) {
                 return addr
-            } else {
-                return "${crmAccount.name} <${addr}>".toString()
             }
+            return "${crmAccount.name} <${addr}>".toString()
         }
 
         def config
@@ -116,7 +134,7 @@ class CrmThemeService {
     }
 
     void setLogoForAccount(Long account, String size, String path) {
-        if(size == null) {
+        if (size == null) {
             throw new IllegalArgumentException("logo size cannot be null")
         }
         def crmAccount = CrmAccount.get(account)
@@ -124,10 +142,11 @@ class CrmThemeService {
             throw new IllegalArgumentException("No such account: $account")
         }
         crmAccount.setOption('logo.' + size, path)
+        log.debug "Account #$account [$crmAccount.name] is now using [$path] as $size logo"
     }
 
     void setLogoForTenant(Long tenant, String size, String path) {
-        if(size == null) {
+        if (size == null) {
             throw new IllegalArgumentException("logo size cannot be null")
         }
         def crmTenant = CrmTenant.get(tenant)
@@ -135,27 +154,31 @@ class CrmThemeService {
             throw new IllegalArgumentException("No such tenant: $tenant")
         }
         crmTenant.setOption('logo.' + size, path)
+        log.debug "Tenant #$tenant [$crmTenant.name] is now using [$path] as $size logo"
     }
 
     String getLogo(Long tenant, String size = 'medium') {
-        def crmTenant = CrmTenant.get(tenant)
-        if (!crmTenant) {
-            throw new IllegalArgumentException("No such tenant: $tenant")
-        }
-        def path = crmTenant.getOption('logo.' + size)
-        if(!path) {
-            def crmAccount = crmTenant.account
-            path = crmAccount.getOption('logo.' + size)
-            if (!path) {
-                path = grailsApplication.config.crm.theme.logo."$size"
+        def path
+        if (tenant) {
+            def crmTenant = CrmTenant.get(tenant)
+            if (!crmTenant) {
+                throw new IllegalArgumentException("No such tenant: $tenant")
             }
+            path = crmTenant.getOption('logo.' + size)
+            if (!path) {
+                def crmAccount = crmTenant.account
+                path = crmAccount.getOption('logo.' + size)
+            }
+        }
+        if (!path) {
+            path = grailsApplication.config.crm.theme.logo."$size"
         }
         path ?: null
     }
 
     File getLogoFile(Long tenant, String size = 'medium') {
         String path = getLogo(tenant, size)
-        if(path) {
+        if (path) {
             return grailsApplication.mainContext.getResource(path)?.getFile()
         }
         return null
