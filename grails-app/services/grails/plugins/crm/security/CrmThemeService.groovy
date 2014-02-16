@@ -53,7 +53,7 @@ class CrmThemeService {
                 property('tenant.id')
             }
             eq('key', OPTION_THEME_NAME)
-            eq('v', themeName)
+            eq('v', """{"v":"${themeName}"}""") // TODO This is a hack that knows how JSON is stored, please fix!
             maxResults 1
         }
 
