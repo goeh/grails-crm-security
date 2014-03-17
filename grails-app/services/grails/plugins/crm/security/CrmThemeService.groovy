@@ -104,7 +104,8 @@ class CrmThemeService {
         if (tenant) {
             def crmTenant = CrmTenant.get(tenant)
             if (!crmTenant) {
-                throw new IllegalArgumentException("No such tenant: $tenant")
+                log.warn("No such tenant: $tenant")
+                return null
             }
             def opt = crmTenant.getOption(OPTION_THEME_NAME)
             if (opt) {
@@ -142,7 +143,8 @@ class CrmThemeService {
     String getEmailSender(Long tenant, String configKey = null) {
         def crmTenant = CrmTenant.get(tenant)
         if (!crmTenant) {
-            throw new IllegalArgumentException("No such tenant: $tenant")
+            log.warn("No such tenant: $tenant")
+            return null
         }
         def opt = crmTenant.getOption(OPTION_EMAIL_FROM)
         if (opt) {
@@ -202,7 +204,8 @@ class CrmThemeService {
         if (tenant) {
             def crmTenant = CrmTenant.get(tenant)
             if (!crmTenant) {
-                throw new IllegalArgumentException("No such tenant: $tenant")
+                log.warn("No such tenant: $tenant")
+                return null
             }
             path = crmTenant.getOption('logo.' + size)
             if (!path) {
