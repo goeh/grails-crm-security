@@ -259,7 +259,11 @@ class CrmSecurityService {
 
         enableDefaultFeatures(tenant.id)
 
-        event(for: "crm", topic: "tenantCreated", data: tenant.dao)
+        // Tell the world we have a new tenant.
+        Map payload = tenant.dao
+        payload.user = username
+        event(for: "crm", topic: "tenantCreated", data: payload)
+
         return tenant
     }
 
