@@ -82,6 +82,14 @@ class CrmThemeService {
         return theme ? getTenantForTheme(theme) : null
     }
 
+    String getThemeForAccount(Long account) {
+        def crmAccount = CrmAccount.get(account)
+        if (!crmAccount) {
+            throw new IllegalArgumentException("No such account: $account")
+        }
+        crmAccount.getOption(OPTION_THEME_NAME)
+    }
+
     void setThemeForAccount(Long account, String themeName) {
         def crmAccount = CrmAccount.get(account)
         if (!crmAccount) {
