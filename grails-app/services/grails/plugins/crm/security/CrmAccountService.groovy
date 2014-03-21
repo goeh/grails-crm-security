@@ -118,6 +118,26 @@ class CrmAccountService {
         return account
     }
 
+    /**
+     * Returns the CrmAccount instance for the given id.
+     *
+     * @param id account id (primary key)
+     * @return CrmAccount instance or null if not found
+     */
+    CrmAccount getAccount(Long id) {
+        CrmAccount.get(id)
+    }
+
+    /**
+     * Get account properties as a Map.
+     *
+     * @param id account id
+     * @return Map initialized with useful properties from the account, or null if invalid id
+     */
+    Map getAccountInfo(Long id) {
+        getAccount(id)?.dao
+    }
+
     List<CrmAccount> getAccounts(String username = null) {
         if (!username) {
             username = crmSecurityService.getCurrentUser()?.username
