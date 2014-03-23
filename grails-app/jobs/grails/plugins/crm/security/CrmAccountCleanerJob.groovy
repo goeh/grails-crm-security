@@ -34,7 +34,7 @@ class CrmAccountCleanerJob {
                 not {
                     eq 'status', CrmAccount.STATUS_CLOSED
                 }
-                lt 'expires', new java.sql.Date(new Date().clearTime())
+                lt 'expires', new java.sql.Date(new Date().clearTime().time)
             }
             if (result) {
                 log.debug "Closing ${result.size()} expired accounts"
