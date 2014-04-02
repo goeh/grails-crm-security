@@ -6,6 +6,9 @@ config = {
     cache {
         name "permissions"
     }
+    cache {
+        name "crmtheme"
+    }
     domain {
         name CrmUser
     }

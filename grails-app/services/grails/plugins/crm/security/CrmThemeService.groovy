@@ -16,18 +16,24 @@
 
 package grails.plugins.crm.security
 
+import grails.plugins.crm.core.CrmTheme
 import grails.plugins.crm.core.TenantUtils
+import org.springframework.cache.Cache
+import org.springframework.cache.CacheManager
 
 /**
  * A service for getting and settings theme parameters.
  */
 class CrmThemeService {
 
+    public static final String CACHE_NAME = "crmtheme"
     private static final String OPTION_THEME_NAME = "theme.name"
     private static final String OPTION_EMAIL_FROM = "mail.from"
 
     def grailsApplication
     def crmSecurityService
+
+    CacheManager grailsCacheManager
 
     private static final Map<String, Long> themeTenants = [:]
 
@@ -106,6 +112,22 @@ class CrmThemeService {
         }
         crmTenant.setOption(OPTION_THEME_NAME, themeName)
         log.debug "Tenant #$tenant [$crmTenant.name] is now using theme [$themeName]"
+    }
+
+    /**
+     * Return a CrmTheme instance for a tenant
+     * @param id tenant id to lookup the theme for
+     * @return a CrmTheme instance or null if no theme was found for the specified tenant
+     */
+    CrmTheme getTheme(Long id) {
+        final Cache cache = grailsCacheManager.getCache(CACHE_NAME)
+        CrmTheme theme = cache.get(id)?.get()
+        if (theme == null) {
+            final String themeName = getThemeName(id)
+            theme = themeName ? new CrmTheme(themeName, getTenantForTheme(themeName) ?: 1L) : null
+            cache.put(id, theme)
+        }
+        return theme
     }
 
     String getThemeName(Long tenant) {

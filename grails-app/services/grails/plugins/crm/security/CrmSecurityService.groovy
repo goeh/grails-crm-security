@@ -135,7 +135,7 @@ class CrmSecurityService {
 
         crmSecurityDelegate.createUser(user.username, props.password)
 
-        event(for: "crm", topic: "userCreated", data: user.dao + [ip: props.ip])
+        event(for: "crm", topic: "userCreated", data: user.dao + [ip: props.ip, theme: props.theme])
 
         return user
     }
