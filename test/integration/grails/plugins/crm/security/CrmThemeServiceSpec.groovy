@@ -27,6 +27,7 @@ class CrmThemeServiceSpec extends grails.plugin.spock.IntegrationSpec {
     def crmSecurityService
     def crmAccountService
     def crmThemeService
+    def grailsLinkGenerator // CrmThemeLinkGenerator configured in resources.groovy
 
     def "get theme name"() {
         when:
@@ -197,8 +198,6 @@ class CrmThemeServiceSpec extends grails.plugin.spock.IntegrationSpec {
         config.test4.cookie.domain = 'test.domain.se'
         config.test4.cookie.path = '/'
 
-        crmThemeService.defaultServerUrl = 'http://www.domain.se'
-
         when:
         def user = crmSecurityService.createUser([username: "test", password: "test",
                 email: "test@test.com", name: "Test", enabled: true])
@@ -218,17 +217,17 @@ class CrmThemeServiceSpec extends grails.plugin.spock.IntegrationSpec {
         }
 
         then:
-        TenantUtils.withTenant(test1.id) { crmThemeService.getServerUrl() } == 'http://www.domain.se'
-        TenantUtils.withTenant(test2.id) { crmThemeService.getServerUrl() } == 'https://secure.domain.se'
-        TenantUtils.withTenant(test3.id) { crmThemeService.getServerUrl() } == 'https://www.domain.se/secure'
-        crmThemeService.getServerUrl(test4.id) == 'http://test.domain.se'
-        crmThemeService.getServerUrl(0L) == 'http://www.domain.se'
+        TenantUtils.withTenant(test1.id) { grailsLinkGenerator.getServerBaseURL() } == 'http://www.domain.se'
+        TenantUtils.withTenant(test2.id) { grailsLinkGenerator.getServerBaseURL() } == 'https://secure.domain.se'
+        TenantUtils.withTenant(test3.id) { grailsLinkGenerator.getServerBaseURL() } == 'https://www.domain.se/secure'
+        TenantUtils.withTenant(test4.id) { grailsLinkGenerator.getServerBaseURL() } == 'http://test.domain.se'
+        grailsLinkGenerator.getServerBaseURL() == 'http://www.domain.se'
 
         when:
         config.serverURL = "https://app.domain.se"
 
         then:
-        TenantUtils.withTenant(test1.id) { crmThemeService.getServerUrl() } == 'https://app.domain.se'
-        crmThemeService.getServerUrl(0L) == 'https://app.domain.se'
+        TenantUtils.withTenant(test1.id) { grailsLinkGenerator.getServerBaseURL() } == 'https://app.domain.se'
+        grailsLinkGenerator.getServerBaseURL() == 'https://app.domain.se'
     }
 }

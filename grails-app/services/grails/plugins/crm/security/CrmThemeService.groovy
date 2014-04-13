@@ -18,7 +18,6 @@ package grails.plugins.crm.security
 
 import grails.plugins.crm.core.CrmTheme
 import grails.plugins.crm.core.TenantUtils
-import org.codehaus.groovy.grails.web.mapping.LinkGenerator
 import org.springframework.cache.Cache
 import org.springframework.cache.CacheManager
 
@@ -35,10 +34,6 @@ class CrmThemeService {
     def crmSecurityService
 
     CacheManager grailsCacheManager
-
-    LinkGenerator grailsLinkGenerator
-
-    private String defaultServerUrl
 
     private static final Map<String, Long> themeTenants = [:]
 
@@ -260,53 +255,5 @@ class CrmThemeService {
             return grailsApplication.mainContext.getResource(path)?.getFile()
         }
         return null
-    }
-
-    /**
-     * Return theme specific server URL.
-     * @param tenant tenant ID or null/omitted for current tenant
-     * @return application server path
-     */
-    String getServerUrl(Long tenant = null) {
-        if (tenant == null) {
-            tenant = TenantUtils.tenant
-        }
-        def url
-        if (tenant) {
-            def theme = getThemeName(tenant)
-            if (theme) {
-                def config = grailsApplication.config.crm.theme."$theme"
-                if (config) {
-                    url = config.serverURL
-                    if (!url) {
-                        def domain = config.cookie.domain
-                        if (domain) {
-                            if (config.cookie.secure) {
-                                url = "https://$domain"
-                            } else {
-                                url = "http://$domain"
-                            }
-                            def path = config.cookie.path
-                            if (!path) {
-                                path = grailsLinkGenerator.contextPath
-                            }
-                            if (path && path != '/') {
-                                url += path
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if(! url) {
-            url = grailsApplication.config.crm.theme.serverURL
-        }
-
-        url ?: (defaultServerUrl ?: grailsLinkGenerator.serverBaseURL)
-    }
-
-    void setDefaultServerUrl(final String url) {
-        this.@defaultServerUrl = url
     }
 }
