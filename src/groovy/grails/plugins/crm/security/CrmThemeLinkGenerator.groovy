@@ -27,6 +27,10 @@ class CrmThemeLinkGenerator extends DefaultLinkGenerator {
     def grailsApplication
     def crmThemeService
 
+    CrmThemeLinkGenerator(final String serverUrl) {
+        super(serverUrl)
+    }
+
     CrmThemeLinkGenerator(final String serverUrl, final String contextPath) {
         super(serverUrl, contextPath)
     }
@@ -65,8 +69,11 @@ class CrmThemeLinkGenerator extends DefaultLinkGenerator {
 
         if(! url) {
             url = grailsApplication.config.crm.theme.serverURL
+            if(! url) {
+               url = super.makeServerURL()
+            }
         }
 
-        url ?: super.makeServerURL()
+        return url
     }
 }
