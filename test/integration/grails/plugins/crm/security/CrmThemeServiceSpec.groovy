@@ -16,6 +16,8 @@
 
 package grails.plugins.crm.security
 
+import grails.plugins.crm.core.TenantUtils
+
 /**
  * Created by goran on 2014-01-20.
  */
@@ -170,5 +172,63 @@ class CrmThemeServiceSpec extends grails.plugin.spock.IntegrationSpec {
         then:
         crmThemeService.getLogo(tenant.id) == '/images/logo-medium.png'
         crmThemeService.getLogoFile(tenant.id).name == 'logo-medium.png'
+    }
+
+    def "validate serverURL"() {
+        given:
+        def test1
+        def test2
+        def test3
+        def test4
+        def config = grailsApplication.config.crm.theme
+        // Test 1
+        //config.serverURL = "https://app.domain.se"
+        //config.cookie.domain = 'app.domain.se'
+        //config.cookie.path = '/'
+        // Test 2
+        config.test2.serverURL = "https://secure.domain.se"
+        config.test2.cookie.domain = 'secure.domain.se'
+        config.test2.cookie.path = '/'
+        // Test 3
+        config.test3.serverURL = "https://www.domain.se/secure"
+        config.test3.cookie.domain = 'www.domain.se'
+        config.test3.cookie.path = '/secure'
+        // Test 4
+        config.test4.cookie.domain = 'test.domain.se'
+        config.test4.cookie.path = '/'
+
+        crmThemeService.defaultServerUrl = 'http://www.domain.se'
+
+        when:
+        def user = crmSecurityService.createUser([username: "test", password: "test",
+                email: "test@test.com", name: "Test", enabled: true])
+        crmSecurityService.runAs(user.username) {
+            def account = crmAccountService.createAccount([status: "active"], [:])
+            test1 = crmSecurityService.createTenant(account, "Test 1")
+            test2 = crmSecurityService.createTenant(account, "Test 2")
+            test2.setOption('theme.name', 'test2')
+            test2.save()
+            test3 = crmSecurityService.createTenant(account, "Test 3")
+            test3.setOption('theme.name', 'test3')
+            test3.save()
+            test4 = crmSecurityService.createTenant(account, "Test 4")
+            test4.setOption('theme.name', 'test4')
+            test4.save()
+            return account
+        }
+
+        then:
+        TenantUtils.withTenant(test1.id) { crmThemeService.getServerUrl() } == 'http://www.domain.se'
+        TenantUtils.withTenant(test2.id) { crmThemeService.getServerUrl() } == 'https://secure.domain.se'
+        TenantUtils.withTenant(test3.id) { crmThemeService.getServerUrl() } == 'https://www.domain.se/secure'
+        crmThemeService.getServerUrl(test4.id) == 'http://test.domain.se'
+        crmThemeService.getServerUrl(0L) == 'http://www.domain.se'
+
+        when:
+        config.serverURL = "https://app.domain.se"
+
+        then:
+        TenantUtils.withTenant(test1.id) { crmThemeService.getServerUrl() } == 'https://app.domain.se'
+        crmThemeService.getServerUrl(0L) == 'https://app.domain.se'
     }
 }
