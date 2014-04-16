@@ -18,6 +18,7 @@ package grails.plugins.crm.security
 
 import grails.plugins.crm.core.TenantUtils
 import org.codehaus.groovy.grails.web.mapping.DefaultLinkGenerator
+import org.springframework.web.context.request.RequestContextHolder
 
 /**
  * A CRM-theme-aware link generator.
@@ -38,39 +39,44 @@ class CrmThemeLinkGenerator extends DefaultLinkGenerator {
     @Override
     String makeServerURL() {
         Long tenant = TenantUtils.tenant
-        def url
+
+        def theme
         if (tenant) {
-            def theme = crmThemeService.getThemeName(tenant)
-            if (theme) {
-                def config = grailsApplication.config.crm.theme."$theme"
-                if (config) {
-                    url = config.serverURL
-                    if (!url) {
-                        // Try to figure out serverURL from theme cookie configuration.
-                        def domain = config.cookie.domain
-                        if (domain) {
-                            if (config.cookie.secure) {
-                                url = "https://$domain"
-                            } else {
-                                url = "http://$domain"
-                            }
-                            def path = config.cookie.path
-                            if (!path) {
-                                path = contextPath
-                            }
-                            if (path && path != '/') {
-                                url += path
-                            }
+            theme = crmThemeService.getThemeName(tenant)
+        } else {
+            theme = RequestContextHolder.getRequestAttributes()?.request?.getAttribute('crmTheme')?.name
+        }
+
+        def url
+        if (theme) {
+            def config = grailsApplication.config.crm.theme."$theme"
+            if (config) {
+                url = config.serverURL
+                if (!url) {
+                    // Try to figure out serverURL from theme cookie configuration.
+                    def domain = config.cookie.domain
+                    if (domain) {
+                        if (config.cookie.secure) {
+                            url = "https://$domain"
+                        } else {
+                            url = "http://$domain"
+                        }
+                        def path = config.cookie.path
+                        if (!path) {
+                            path = contextPath
+                        }
+                        if (path && path != '/') {
+                            url += path
                         }
                     }
                 }
             }
         }
 
-        if(! url) {
+        if (!url) {
             url = grailsApplication.config.crm.theme.serverURL
-            if(! url) {
-               url = super.makeServerURL()
+            if (!url) {
+                url = super.makeServerURL()
             }
         }
 
