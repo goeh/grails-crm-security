@@ -16,7 +16,7 @@
 */
 package grails.plugins.crm.security
 
-class CrmSecurityServiceSpec extends grails.plugin.spock.IntegrationSpec {
+class CrmSecurityServiceSpec extends grails.test.spock.IntegrationSpec {
 
     def crmSecurityService
 

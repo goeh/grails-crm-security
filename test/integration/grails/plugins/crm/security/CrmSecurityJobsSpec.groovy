@@ -5,7 +5,7 @@ import org.codehaus.groovy.grails.orm.hibernate.cfg.GrailsDomainBinder
 /**
  * Test Quartz jobs in the grails.plugins.crm.security package.
  */
-class CrmSecurityJobsSpec extends grails.plugin.spock.IntegrationSpec {
+class CrmSecurityJobsSpec extends grails.test.spock.IntegrationSpec {
 
     def crmSecurityService
     def crmSecurityDelegate

@@ -3,7 +3,7 @@ package grails.plugins.crm.security
 /**
  * Test spec for CrmTenantLogService.
  */
-class CrmTenantLogSpec extends grails.plugin.spock.IntegrationSpec {
+class CrmTenantLogSpec extends grails.test.spock.IntegrationSpec {
 
     def crmTenantLogService
 

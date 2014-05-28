@@ -3,7 +3,7 @@ package grails.plugins.crm.security
 /**
  * Test CrmSecurityService with focus on CrmUser and CrmAccount.
  */
-class CrmUserAccountSpec extends grails.plugin.spock.IntegrationSpec {
+class CrmUserAccountSpec extends grails.test.spock.IntegrationSpec {
     def crmSecurityService
     def crmAccountService
     def grailsApplication

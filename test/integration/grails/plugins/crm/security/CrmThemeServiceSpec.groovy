@@ -21,7 +21,7 @@ import grails.plugins.crm.core.TenantUtils
 /**
  * Created by goran on 2014-01-20.
  */
-class CrmThemeServiceSpec extends grails.plugin.spock.IntegrationSpec {
+class CrmThemeServiceSpec extends grails.test.spock.IntegrationSpec {
 
     def grailsApplication
     def crmSecurityService

@@ -19,7 +19,7 @@ package grails.plugins.crm.security
 /**
  * Test ShiroCrmTenant and ShiroCrmTenantOption.
  */
-class CrmTenantSpec extends grails.plugin.spock.IntegrationSpec {
+class CrmTenantSpec extends grails.test.spock.IntegrationSpec {
 
     def crmSecurityService
     def crmAccountService
