@@ -217,6 +217,9 @@ class CrmSecurityService {
         if (!tenantName) {
             throw new IllegalArgumentException("Can't create tenant because tenantName is null")
         }
+        if (!account.active) {
+            throw new CrmException("account.not.active.message", [account.toString()])
+        }
         def username = crmSecurityDelegate.currentUser
         if (!username) {
             throw new IllegalArgumentException("Can't create tenant [$tenantName] because user is not authenticated")
