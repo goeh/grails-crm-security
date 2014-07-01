@@ -1,4 +1,8 @@
 grails.project.work.dir = "target"
+grails.project.class.dir = "target/classes"
+grails.project.test.class.dir = "target/test-classes"
+grails.project.test.reports.dir = "target/test-reports"
+grails.project.target.level = 1.6
 
 grails.project.repos.default = "crm"
 
@@ -28,19 +32,18 @@ grails.project.dependency.resolution = {
             export = false
             exclude "spock-grails-support"
         }
-        test(":codenarc:0.19") { export = false }
+        test(":codenarc:0.21") { export = false }
         test(":code-coverage:1.2.7") { export = false }
-
-        compile(":platform-core:1.0.0") { excludes 'resources' }
-        compile ":cache:1.1.1"
         test(":cache-ehcache:1.0.0") {
             excludes 'cache'
             export = false
         }
-        runtime ":simple-captcha:0.8.5"
+        compile(":platform-core:1.0.0") { excludes 'resources' }
+        compile ":cache:1.1.1"
+        compile ":simple-captcha:0.8.5"
 
         compile "grails.crm:crm-core:latest.integration"
-        runtime "grails.crm:crm-feature:latest.integration"
+        compile "grails.crm:crm-feature:latest.integration"
     }
 }
 
