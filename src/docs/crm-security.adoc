@@ -1,0 +1,113 @@
+= GR8 CRM - Security Plugin
+Göran Ehrsson <goran@technipelago.se>
+:toc:
+:numbered:
+:icons: font
+:imagesdir: ./images
+:source-highlighter: prettify
+:homepage: http://gr8crm.github.io
+:gr8crm: GR8 CRM
+:gr8source: https://github.com/goeh/grails-crm-security
+:license: This plugin is licensed with http://www.apache.org/licenses/LICENSE-2.0.html[Apache License version 2.0]
+
+== Introduction
+
+{gr8crm} is a set of http://www.grails.org/[Grails Web Application Framework]
+plugins that makes it easy to develop web applications with CRM functionality.
+
+=== Customer relationship management
+
+Customer relationship management (CRM) is a system for managing a company’s interactions with current and future customers.
+It involves using technology to organize, automate and synchronize sales, marketing, customer service, and technical support.
+http://en.wikipedia.org/wiki/Customer_relationship_management[Wikipedia]
+
+The {gr8crm} "Ecosystem" currently contains over 40 Grails plugins. For a complete list of plugins see http://gr8crm.github.io.
+
+Each {gr8crm} plugin defines a http://martinfowler.com/bliki/BoundedContext.html[Bounded Context]
+that focus on one specific domain, for example *contact*, *project* or *document*.
+
+== CRM Security Plugin
+
+The +crm-security+ plugin is a mandatory plugin in {gr8crm}, it manages basic application security like users, roles and permissions.
+However the plugin does not contain a concrete security implementation. It's an abstract security implementation with generic features.
+Concrete implementations exists in the form of sub-plugins. One such sub-plugin is +crm-security-shiro+ that implements
+application security using the Apache Shiro web security framework.
+
+== Security Design
+
+All {gr8crm} applications use the +crm-security+ plugin and thus get four common elements that are important objects
+in a {gr8crm} application (*account*, *tenant*, *role* and *user*).
+
+=== Account
+
+An account in {gr8crm} is owned by a user. An account contains billing information.
+An account can have one or many tenants.
+
+=== Tenant
+
+A tenant can be viewed as a separate database but is technically just an identifier.
+All user-registered information in a {gr8crm} application is tied to a tenant via a +tenantId+ property.
+
+=== Role
+
+Each tenant can contain a unique set of roles that users can have. Common roles are +admin+, +user+ and +guest+.
+
+=== User
+
+A user is connected to tenants through roles.
+For example a user can have the *admin* role in one tenant and the *user* role on another tenant.
+A user is identified by it's unique username.
+
+== Initialize Security Objects
+
+To create user-data in a {gr8crm} application you must first create a user, an account and a tenant.
+This can easily be done in BootStrap.groovy with some help from +crmAccountService+ and +crmSecurityService+.
+
+[source,groovy]
+.Bootstrap.groovy
+----
+class BootStrap {
+
+    def crmAccountService
+    def crmSecurityService
+
+    def init = { servletContext ->
+
+        if (!crmSecurityService.getUser("admin")) {
+
+            // Add a permission that allow everything.
+            crmSecurityService.addPermissionAlias("permission.all", ["*:*"])
+
+            // Create an admin user.
+            def admin = crmSecurityService.createUser(username: "admin", password: "admin",
+                    email: "firstname.lastname@email.com", name: "Administrator", enabled: true)
+
+            // Create an account and a tenant. Then make sure the admin user has unlimited permissions in that tenant.
+            crmSecurityService.runAs(admin.username) {
+                def account = crmAccountService.createAccount(name: "My account", status: "active")
+                def tenant = crmSecurityService.createTenant(account, "My first tenant", [locale: Locale.ENGLISH])
+                crmSecurityService.runAs(admin.username, tenant.id) {
+                    crmSecurityService.addPermissionToUser("permission.all")
+
+                    // Statements inside this block executes as user "admin" in the context of "My first tenant".
+                }
+            }
+        }
+    }
+
+    def destroy = {
+    }
+}
+----
+
+== CrmAccountService
+
+== CrmSecurityService
+
+== License
+
+{license}
+
+== Source Code
+
+The source code for this plugin is available at {gr8source}
