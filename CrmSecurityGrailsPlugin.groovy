@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 Goran Ehrsson.
+ * Copyright (c) 2014 Goran Ehrsson.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@
 import grails.plugins.crm.security.ResetPasswordDelegate
 
 class CrmSecurityGrailsPlugin {
-    def groupId = "grails.crm"
-    def version = "1.2.11"
+    def groupId = "gr8crm"
+    def version = "2.0.0"
     def grailsVersion = "2.2 > *"
     def dependsOn = [:]
     def loadAfter = ['crmCore']
@@ -35,7 +35,7 @@ class CrmSecurityGrailsPlugin {
 This plugin provides basic security feature for GR8 CRM.
 Specific security implementations exists for Apache Shiro (crm-security-shiro).
 '''
-    def documentation = "https://github.com/goeh/grails-crm-security"
+    def documentation = "http://gr8crm.github.io/plugins/crm-security/crm-security.html"
     def license = "APACHE"
     def organization = [name: "Technipelago AB", url: "http://www.technipelago.se/"]
     def issueManagement = [system: "github", url: "https://github.com/goeh/grails-crm-security/issues"]
