@@ -18,7 +18,7 @@
 import grails.plugins.crm.security.ResetPasswordDelegate
 
 class CrmSecurityGrailsPlugin {
-    def groupId = "gr8crm"
+    def groupId = ""
     def version = "2.0.0"
     def grailsVersion = "2.2 > *"
     def dependsOn = [:]
@@ -35,7 +35,7 @@ class CrmSecurityGrailsPlugin {
 This plugin provides basic security feature for GR8 CRM.
 Specific security implementations exists for Apache Shiro (crm-security-shiro).
 '''
-    def documentation = "http://gr8crm.github.io/plugins/crm-security/crm-security.html"
+    def documentation = "http://gr8crm.github.io/plugins/crm-security/"
     def license = "APACHE"
     def organization = [name: "Technipelago AB", url: "http://www.technipelago.se/"]
     def issueManagement = [system: "github", url: "https://github.com/goeh/grails-crm-security/issues"]
