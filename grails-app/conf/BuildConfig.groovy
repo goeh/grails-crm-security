@@ -36,7 +36,7 @@ grails.project.dependency.resolution = {
         compile ":cache:1.1.1"
         compile ":simple-captcha:0.8.5"
 
-        compile ":crm-core:2.0.0"
+        compile ":crm-core:2.0.2"
         compile ":crm-feature:2.0.0"
     }
 }
