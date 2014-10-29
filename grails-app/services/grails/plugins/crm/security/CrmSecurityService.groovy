@@ -982,7 +982,7 @@ class CrmSecurityService {
     }
 
     List<Map<String, Object>> getTenantUsers(Long tenant = TenantUtils.tenant) {
-        event(for: "crmTenant", topic: "getUsers", data: [tenant: tenant]).values.flatten()
+        event(for: "crmTenant", topic: "getUsers", data: [tenant: tenant], fork: false).values.flatten()
     }
 
     CrmRole updatePermissionsForRole(Long tenant = null, String rolename, List<String> permissions) {
