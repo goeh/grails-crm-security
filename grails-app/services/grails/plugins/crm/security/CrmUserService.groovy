@@ -25,6 +25,9 @@ class CrmUserService {
 
     static transactional = true
 
+    def crmThemeService
+    def crmSecurityService
+
     /**
      * Empty query = search all records.
      *
@@ -44,6 +47,19 @@ class CrmUserService {
      */
     def list(Map query, Map params) {
 
+        final Set<Long> users = [] as Set
+        if (query.theme) {
+            final List<CrmTenant> result = crmThemeService.findAllTenantsByTheme(query.theme)
+            for (t in result) {
+                for (Map u in crmSecurityService.getTenantUsers(t.id)) {
+                    users << u.id
+                }
+            }
+            if (users.isEmpty()) {
+                users << 0L
+            }
+        }
+
         CrmUser.createCriteria().list(params) {
             if (query.username) {
                 ilike('username', SearchUtils.wildcard(query.username))
@@ -60,6 +76,9 @@ class CrmUserService {
             if (query.status) {
                 eq('status', Integer.valueOf(query.status))
             }
+            if (users) {
+                inList('id', users)
+            }
         }
     }
 
@@ -71,5 +90,16 @@ class CrmUserService {
             return result.find { it }
         }
         throw new IllegalStateException("Found ${result.size()} users with email [$email]")
+    }
+
+    List<String> getThemesForUser(final CrmUser user) {
+        Set<String> themes = [] as Set
+        for (t in crmSecurityService.getTenants(user.username)) {
+            def theme = crmThemeService.getTheme(t.id)
+            if (theme) {
+                themes << theme.name
+            }
+        }
+        return themes.toList()
     }
 }

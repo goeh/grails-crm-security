@@ -29,7 +29,7 @@ import org.springframework.cache.CacheManager
 class CrmThemeService {
 
     public static final String CACHE_NAME = "crmtheme"
-    private static final String OPTION_THEME_NAME = "theme.name"
+    public static final String OPTION_THEME_NAME = "theme.name"
     private static final String OPTION_EMAIL_FROM = "mail.from"
 
     def grailsApplication
@@ -257,5 +257,26 @@ class CrmThemeService {
             return grailsApplication.mainContext.getResource(path)?.getFile()
         }
         return null
+    }
+
+    List<CrmTenant> findAllTenantsByTheme(String themeName) {
+
+        def id = CrmAccountOption.createCriteria().get() {
+            projections {
+                property('account.id')
+            }
+            eq('key', OPTION_THEME_NAME)
+            eq('v', """{"v":"${themeName}"}""") // TODO This is a hack that knows how JSON is stored, please fix!
+            maxResults 1
+        }
+        if(!id) {
+            return [].asImmutable()
+        }
+
+        CrmTenant.createCriteria().list() {
+            account {
+                eq('id', id)
+            }
+        }
     }
 }

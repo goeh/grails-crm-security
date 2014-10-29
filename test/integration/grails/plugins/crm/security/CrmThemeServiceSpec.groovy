@@ -200,7 +200,7 @@ class CrmThemeServiceSpec extends grails.plugin.spock.IntegrationSpec {
 
         when:
         def user = crmSecurityService.createUser([username: "test", password: "test",
-                email: "test@test.com", name: "Test", enabled: true])
+                                                  email   : "test@test.com", name: "Test", enabled: true])
         crmSecurityService.runAs(user.username) {
             def account = crmAccountService.createAccount([status: "active"], [:])
             test1 = crmSecurityService.createTenant(account, "Test 1")
@@ -229,5 +229,28 @@ class CrmThemeServiceSpec extends grails.plugin.spock.IntegrationSpec {
         then:
         TenantUtils.withTenant(test1.id) { grailsLinkGenerator.getServerBaseURL() } == 'https://app.domain.se'
         grailsLinkGenerator.getServerBaseURL() == 'https://app.domain.se'
+    }
+
+    def "list all tenant with a specific theme"() {
+        given:
+        def themes = [green: 5, yellow: 2, red: 1]
+
+        when: "Create three accounts, five green tenants, two yellow tenant and one red tenant"
+        for (theme in themes) {
+            def user = crmSecurityService.createUser([username: theme.key, name: "$theme.key user", email: "$theme.key@test.com", password: theme.key, status: CrmUser.STATUS_ACTIVE])
+            crmSecurityService.runAs(user.username) {
+                def account = crmAccountService.createAccount(name: "$theme.key account", expires: new Date() + 30, status: CrmAccount.STATUS_TRIAL,
+                        telephone: "+46800000", address1: "Box 123", postalCode: "12345", city: "Capital", reference: theme.key,
+                        options: [(CrmThemeService.OPTION_THEME_NAME): theme.key])
+                theme.value.times { n ->
+                    crmSecurityService.createTenant(account, "$theme.key #$n")
+                }
+            }
+        }
+
+        then:
+        crmThemeService.findAllTenantsByTheme('green').size() == themes.green
+        crmThemeService.findAllTenantsByTheme('yellow').size() == themes.yellow
+        crmThemeService.findAllTenantsByTheme('red').size() == themes.red
     }
 }
