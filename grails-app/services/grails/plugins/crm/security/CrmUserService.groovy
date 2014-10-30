@@ -16,6 +16,7 @@
 
 package grails.plugins.crm.security
 
+import grails.plugins.crm.core.CrmTheme
 import grails.plugins.crm.core.SearchUtils
 
 /**
@@ -92,12 +93,12 @@ class CrmUserService {
         throw new IllegalStateException("Found ${result.size()} users with email [$email]")
     }
 
-    List<String> getThemesForUser(final CrmUser user) {
-        Set<String> themes = [] as Set
+    List<CrmTheme> getThemesForUser(final CrmUser user) {
+        Set<CrmTheme> themes = [] as Set
         for (t in crmSecurityService.getTenants(user.username)) {
             def theme = crmThemeService.getTheme(t.id)
             if (theme) {
-                themes << theme.name
+                themes << theme
             }
         }
         return themes.toList()

@@ -70,8 +70,8 @@ class CrmUserServiceSpec extends grails.plugin.spock.IntegrationSpec {
         crmUserService.list([theme: 'yellow'], [:]).size() == themes.yellow + 1
         crmUserService.list([theme: 'red'], [:]).size() == themes.red + 1
 
-        crmUserService.getThemesForUser(crmSecurityService.getUser('green')) == ['green']
-        crmUserService.getThemesForUser(crmSecurityService.getUser('yellow')) == ['yellow']
-        crmUserService.getThemesForUser(crmSecurityService.getUser('red')) == ['red']
+        crmUserService.getThemesForUser(crmSecurityService.getUser('green')).head().name == 'green'
+        crmUserService.getThemesForUser(crmSecurityService.getUser('yellow')).head().name == 'yellow'
+        crmUserService.getThemesForUser(crmSecurityService.getUser('red')).head().name == 'red'
     }
 }
