@@ -265,7 +265,7 @@ class CrmSecurityService {
         // Tell the world we have a new tenant.
         Map payload = tenant.dao
         payload.user = username
-        event(for: "crm", topic: "tenantCreated", data: payload)
+        event(for: "crm", topic: "tenantCreated", data: payload, fork: false)
 
         return tenant
     }
