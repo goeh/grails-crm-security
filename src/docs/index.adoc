@@ -42,8 +42,10 @@ in a {gr8crm} application (*account*, *tenant*, *role* and *user*).
 
 === Account
 
-An account in {gr8crm} is owned by a user. An account contains billing information.
-An account can have one or many tenants.
+The *account* it the top-level object in {gr8crm} security object hierarchy.
+In a billing scenario the account is usually the invoice target and contains the invoice address and other billing information.
+Even if you are not running in a multi-tenant business environment an account object must exist.
+In the simplest setup a CRM system contains one user, one account and one tenant.
 
 === Tenant
 
@@ -104,7 +106,105 @@ class BootStrap {
 
 == CrmAccountService
 
+The account service is used to manage a {gr8crm} account. The account is the top-level object in the security object hierarchy.
+
+=== createAccount
+
+`createAccount(Map params, Map features)`
+
+The following properties are available on CrmAccount and can be set with the `params` parameter:
+
+[options="header"]
+|===
+| Property     | Type   | Description
+| name         | String | Account name (mandatory)
+| email        | String | Email address to the account owner
+| telephone    | String | Phone number to the account owner
+| address1     | String | Invoice address
+| address2     | String | Invoice address
+| address3     | String | Invoice address
+| postalCode   | String | Invoice address
+| city         | String | Invoice address
+| region       | String | Invoice address
+| countryCode  | String | Invoice address
+| ssn          | String | Business identification number (if relevant)
+| reference    | String | Name of account owner or invoice reference
+|===
+
+The `features` parameter is used to specify what features are available in the account.
+Feature names are application specific but the following three features and reserved for the security system.
+
+[options="header"]
+|===
+| Feature  | Value   | Description
+| crmAdmin | Integer | Max number of administrators in the account
+| crmUser  | Integer | Max number of users in the account
+| crmGuest | Integer | Max number of guests in the account
+|===
+
+To create an account that allow 2 administrators, 10 users and 50 guests you create the account with the following parameters:
+
+[source,groovy]
+.CreateAccount.groovy
+----
+def account = crmAccountService.createAccount(
+    [name: "Corporate Account", status: "active"],
+    [crmAdmin: 2, crmUser: 10, crmGuest: 50]
+)
+----
+
+Trying to add more than 2 users with the `admin` role to the account above will result in `CrmException` with error code `admin.role.max.exceeded`.
+
+=== getAccounts
+
+`List<CrmAccount> getAccounts(String)`
+
+Return all accounts owned by a specific user.
+
+=== getCurrentAccount
+
+`CrmAccount getCurrentAccount()`
+
+Returns the current active account. The implementation finds the current tenant and then returns the account that the current tenant belongs to.
+
 == CrmSecurityService
+
+This service is the most frequently used service in the {gr8crm} security system. This service focuses on users, roles and permissions.
+Each tenant has its own set of roles and permissions. This means that one user instance can have different permissions in different tenants.
+For example user *linda* can have the *admin* role in tenant *Marketing* and *guest* role in tenant *R&D*.
+
+=== createUser
+
+`CrmUser createUser(Map)`
+
+Create a new user instance.
+
+[options="header"]
+|===
+| Property     | Type    | Description
+| username     | String  | Short name (mandatory)
+| email        | String  | Email (mandatory)
+| name         | String  |  Full name (mandatory)
+| company      | String  | Company name
+| telephone    | String  | Telephone
+| timezone     | String  | Default time zone
+| postalCode   | String  | Postal address
+| countryCode  | String  | Country code
+| campaign     | String  | Sign up campaign
+| status       | Integer | (ACTIVE = 1, BLOCKED = -1)
+|===
+
+=== addUserRole
+
+`CrmUserRole addUserRole(CrmUser user, String rolename, Date expires, Long tenant)`
+
+Assigns a role to a user. The `rolename` parameter is usually *admin*, *user* or *guest*.
+If the role is time-restricted you can specify an *expires* date. After that date the role will no longer be active.
+
+== Changes
+
+2.0.1:: The event crm.tenantCreated is now sent synchronously
+2.0.0:: First public release
 
 == License
 
@@ -113,3 +213,9 @@ class BootStrap {
 == Source Code
 
 The source code for this plugin is available at {gr8source}
+
+== Contributing
+
+Please report {gr8source}/issues[issues or suggestions].
+
+Want to improve the plugin: Fork the {gr8source}[repository] and send a pull request.
