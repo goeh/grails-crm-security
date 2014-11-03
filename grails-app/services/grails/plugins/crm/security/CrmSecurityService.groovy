@@ -869,6 +869,18 @@ class CrmSecurityService {
         return userrole
     }
 
+    void deleteRole(CrmUserRole role) {
+        if (role) {
+            def id = role.id
+            def user = CrmUser.lock(role.userId)
+            role = user.roles.find { it.id == id }
+            if (role) {
+                user.removeFromRoles(role)
+                role.delete(flush: true)
+            }
+        }
+    }
+
     boolean removeUserRole(CrmUser user, String rolename, Long tenant = null) {
         if (!tenant) {
             tenant = TenantUtils.getTenant()
@@ -880,8 +892,7 @@ class CrmSecurityService {
 
         def userrole = CrmUserRole.findByUserAndRole(user, role, [cache: true])
         if (userrole) {
-            user.removeFromRoles(userrole)
-            userrole.delete(flush:true)
+            deleteRole(userrole)
             return true
         }
         return false
