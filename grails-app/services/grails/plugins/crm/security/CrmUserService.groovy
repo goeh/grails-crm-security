@@ -25,6 +25,7 @@ import grails.plugins.crm.core.SearchUtils
 class CrmUserService {
 
     static transactional = true
+    static selectable = 'list'
 
     def crmThemeService
     def crmSecurityService
