@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Goran Ehrsson.
+ * Copyright (c) 2014 Goran Ehrsson.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,7 +85,8 @@ class CrmTenant {
     transient Map<String, Object> getDao() {
         [id: id, name: name, parent: parent?.id, locale: getLocaleInstance(),
                 account: [id: account.id, name: account.name, email: account.email, telephone: account.telephone,
-                        user: [username: account.user?.username, email: account.user?.email, name: account.user?.name]],
+                        user: [username: account.user?.username, email: account.user?.email, name: account.user?.name],
+                active: account.isActive(), theme: account.getOption(CrmThemeService.OPTION_THEME_NAME)],
                 options: getOptionsMap(), dateCreated: dateCreated]
     }
 

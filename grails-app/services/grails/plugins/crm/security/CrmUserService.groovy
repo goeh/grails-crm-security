@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Goran Ehrsson.
+ * Copyright (c) 2014 Goran Ehrsson.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package grails.plugins.crm.security
 
+import grails.plugins.crm.core.CrmTheme
 import grails.plugins.crm.core.SearchUtils
 
 /**
@@ -24,6 +25,10 @@ import grails.plugins.crm.core.SearchUtils
 class CrmUserService {
 
     static transactional = true
+    static selectable = 'list'
+
+    def crmThemeService
+    def crmSecurityService
 
     /**
      * Empty query = search all records.
@@ -44,6 +49,19 @@ class CrmUserService {
      */
     def list(Map query, Map params) {
 
+        final Set<Long> users = [] as Set
+        if (query.theme) {
+            final List<CrmTenant> result = crmThemeService.findAllTenantsByTheme(query.theme)
+            for (t in result) {
+                for (Map u in crmSecurityService.getTenantUsers(t.id)) {
+                    users << u.id
+                }
+            }
+            if (users.isEmpty()) {
+                users << 0L
+            }
+        }
+
         CrmUser.createCriteria().list(params) {
             if (query.username) {
                 ilike('username', SearchUtils.wildcard(query.username))
@@ -60,6 +78,9 @@ class CrmUserService {
             if (query.status) {
                 eq('status', Integer.valueOf(query.status))
             }
+            if (users) {
+                inList('id', users)
+            }
         }
     }
 
@@ -71,5 +92,16 @@ class CrmUserService {
             return result.find { it }
         }
         throw new IllegalStateException("Found ${result.size()} users with email [$email]")
+    }
+
+    List<CrmTheme> getThemesForUser(final CrmUser user) {
+        Set<CrmTheme> themes = [] as Set
+        for (t in crmSecurityService.getTenants(user.username)) {
+            def theme = crmThemeService.getTheme(t.id)
+            if (theme) {
+                themes << theme
+            }
+        }
+        return themes.toList()
     }
 }

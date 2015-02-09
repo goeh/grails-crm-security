@@ -38,3 +38,7 @@ a Twitter Bootstrap based user interface for managing application security.
             // Do work in "My First Tenant" as user "test"...
         }
     }
+
+## Documentation
+
+Complete documentation is located at [gr8crm.github.io](http://gr8crm.github.io/plugins/crm-security/crm-security.html)

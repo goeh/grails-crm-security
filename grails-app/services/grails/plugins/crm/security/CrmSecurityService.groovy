@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Goran Ehrsson.
+ * Copyright (c) 2014 Goran Ehrsson.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -217,6 +217,9 @@ class CrmSecurityService {
         if (!tenantName) {
             throw new IllegalArgumentException("Can't create tenant because tenantName is null")
         }
+        if (!account.active) {
+            throw new CrmException("account.not.active.message", [account.toString()])
+        }
         def username = crmSecurityDelegate.currentUser
         if (!username) {
             throw new IllegalArgumentException("Can't create tenant [$tenantName] because user is not authenticated")
@@ -262,7 +265,7 @@ class CrmSecurityService {
         // Tell the world we have a new tenant.
         Map payload = tenant.dao
         payload.user = username
-        event(for: "crm", topic: "tenantCreated", data: payload)
+        event(for: "crm", topic: "tenantCreated", data: payload, fork: false)
 
         return tenant
     }
@@ -866,6 +869,18 @@ class CrmSecurityService {
         return userrole
     }
 
+    void deleteRole(CrmUserRole role) {
+        if (role) {
+            def id = role.id
+            def user = CrmUser.lock(role.userId)
+            role = user.roles.find { it.id == id }
+            if (role) {
+                user.removeFromRoles(role)
+                role.delete(flush: true)
+            }
+        }
+    }
+
     boolean removeUserRole(CrmUser user, String rolename, Long tenant = null) {
         if (!tenant) {
             tenant = TenantUtils.getTenant()
@@ -877,8 +892,7 @@ class CrmSecurityService {
 
         def userrole = CrmUserRole.findByUserAndRole(user, role, [cache: true])
         if (userrole) {
-            user.removeFromRoles(userrole)
-            userrole.delete(flush:true)
+            deleteRole(userrole)
             return true
         }
         return false
@@ -979,7 +993,7 @@ class CrmSecurityService {
     }
 
     List<Map<String, Object>> getTenantUsers(Long tenant = TenantUtils.tenant) {
-        event(for: "crmTenant", topic: "getUsers", data: [tenant: tenant]).values.flatten()
+        event(for: "crmTenant", topic: "getUsers", data: [tenant: tenant], fork: false).values.flatten()
     }
 
     CrmRole updatePermissionsForRole(Long tenant = null, String rolename, List<String> permissions) {

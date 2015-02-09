@@ -1,0 +1,221 @@
+= GR8 CRM - Security Plugin
+Göran Ehrsson <goran@technipelago.se>
+:toc:
+:numbered:
+:icons: font
+:imagesdir: ./images
+:source-highlighter: prettify
+:homepage: http://gr8crm.github.io
+:gr8crm: GR8 CRM
+:gr8source: https://github.com/goeh/grails-crm-security
+:license: This plugin is licensed with http://www.apache.org/licenses/LICENSE-2.0.html[Apache License version 2.0]
+
+== Introduction
+
+{gr8crm} is a set of http://www.grails.org/[Grails Web Application Framework]
+plugins that makes it easy to develop web applications with CRM functionality.
+
+You can find more information about {gr8crm} on the main documentation site {homepage}.
+
+=== Customer relationship management
+
+Customer relationship management (CRM) is a system for managing a company’s interactions with current and future customers.
+It involves using technology to organize, automate and synchronize sales, marketing, customer service, and technical support.
+http://en.wikipedia.org/wiki/Customer_relationship_management[Wikipedia]
+
+The {gr8crm} "Ecosystem" currently contains over 40 Grails plugins. For a complete list of plugins see {homepage}.
+
+Each {gr8crm} plugin defines a http://martinfowler.com/bliki/BoundedContext.html[Bounded Context]
+that focus on one specific domain, for example *contact*, *project* or *document*.
+
+== CRM Security Plugin
+
+The `crm-security` plugin is a mandatory plugin in {gr8crm}, it manages basic application security like users, roles and permissions.
+However the plugin does not contain a concrete security implementation. It's an abstract security implementation with generic features.
+Concrete implementations exists in the form of sub-plugins. One such sub-plugin is `crm-security-shiro` that implements
+application security using the Apache Shiro web security framework.
+
+== Security Design
+
+All {gr8crm} applications use the `crm-security` plugin and thus get four common elements that are important objects
+in a {gr8crm} application (*account*, *tenant*, *role* and *user*).
+
+=== Account
+
+The *account* it the top-level object in {gr8crm} security object hierarchy.
+In a billing scenario the account is usually the invoice target and contains the invoice address and other billing information.
+Even if you are not running in a multi-tenant business environment an account object must exist.
+In the simplest setup a CRM system contains one user, one account and one tenant.
+
+=== Tenant
+
+A tenant can be viewed as a separate database but is technically just an identifier.
+All user-registered information in a {gr8crm} application is tied to a tenant via a `tenantId` property.
+
+=== Role
+
+Each tenant can contain a unique set of roles that users can have. Common roles are `admin`, `user` and `guest`.
+
+=== User
+
+A user is connected to tenants through roles.
+For example a user can have the *admin* role in one tenant and the *user* role on another tenant.
+A user is identified by it's unique username.
+
+== Initialize Security Objects
+
+To create user-data in a {gr8crm} application you must first create a user, an account and a tenant.
+This can easily be done in BootStrap.groovy with some help from `crmAccountService` and `crmSecurityService`.
+
+[source,groovy]
+.Bootstrap.groovy
+----
+class BootStrap {
+
+    def crmAccountService
+    def crmSecurityService
+
+    def init = { servletContext ->
+
+        if (!crmSecurityService.getUser("admin")) {
+
+            // Add a permission that allow everything.
+            crmSecurityService.addPermissionAlias("permission.all", ["*:*"])
+
+            // Create an admin user.
+            def admin = crmSecurityService.createUser(username: "admin", password: "admin",
+                    email: "firstname.lastname@email.com", name: "Administrator", enabled: true)
+
+            // Create an account and a tenant. Then make sure the admin user has unlimited permissions in that tenant.
+            crmSecurityService.runAs(admin.username) {
+                def account = crmAccountService.createAccount(name: "My account", status: "active")
+                def tenant = crmSecurityService.createTenant(account, "My first tenant", [locale: Locale.ENGLISH])
+                crmSecurityService.runAs(admin.username, tenant.id) {
+                    crmSecurityService.addPermissionToUser("permission.all")
+
+                    // Statements inside this block executes as user "admin" in the context of "My first tenant".
+                }
+            }
+        }
+    }
+
+    def destroy = {
+    }
+}
+----
+
+== CrmAccountService
+
+The account service is used to manage a {gr8crm} account. The account is the top-level object in the security object hierarchy.
+
+=== createAccount
+
+`createAccount(Map params, Map features)`
+
+The following properties are available on CrmAccount and can be set with the `params` parameter:
+
+[options="header"]
+|===
+| Property     | Type   | Description
+| name         | String | Account name (mandatory)
+| email        | String | Email address to the account owner
+| telephone    | String | Phone number to the account owner
+| address1     | String | Invoice address
+| address2     | String | Invoice address
+| address3     | String | Invoice address
+| postalCode   | String | Invoice address
+| city         | String | Invoice address
+| region       | String | Invoice address
+| countryCode  | String | Invoice address
+| ssn          | String | Business identification number (if relevant)
+| reference    | String | Name of account owner or invoice reference
+|===
+
+The `features` parameter is used to specify what features are available in the account.
+Feature names are application specific but the following three features and reserved for the security system.
+
+[options="header"]
+|===
+| Feature  | Value   | Description
+| crmAdmin | Integer | Max number of administrators in the account
+| crmUser  | Integer | Max number of users in the account
+| crmGuest | Integer | Max number of guests in the account
+|===
+
+To create an account that allow 2 administrators, 10 users and 50 guests you create the account with the following parameters:
+
+[source,groovy]
+.CreateAccount.groovy
+----
+def account = crmAccountService.createAccount(
+    [name: "Corporate Account", status: "active"],
+    [crmAdmin: 2, crmUser: 10, crmGuest: 50]
+)
+----
+
+Trying to add more than 2 users with the `admin` role to the account above will result in `CrmException` with error code `admin.role.max.exceeded`.
+
+=== getAccounts
+
+`List<CrmAccount> getAccounts(String)`
+
+Return all accounts owned by a specific user.
+
+=== getCurrentAccount
+
+`CrmAccount getCurrentAccount()`
+
+Returns the current active account. The implementation finds the current tenant and then returns the account that the current tenant belongs to.
+
+== CrmSecurityService
+
+This service is the most frequently used service in the {gr8crm} security system. This service focuses on users, roles and permissions.
+Each tenant has its own set of roles and permissions. This means that one user instance can have different permissions in different tenants.
+For example user *linda* can have the *admin* role in tenant *Marketing* and *guest* role in tenant *R&D*.
+
+=== createUser
+
+`CrmUser createUser(Map)`
+
+Create a new user instance.
+
+[options="header"]
+|===
+| Property     | Type    | Description
+| username     | String  | Short name (mandatory)
+| email        | String  | Email (mandatory)
+| name         | String  |  Full name (mandatory)
+| company      | String  | Company name
+| telephone    | String  | Telephone
+| timezone     | String  | Default time zone
+| postalCode   | String  | Postal address
+| countryCode  | String  | Country code
+| campaign     | String  | Sign up campaign
+| status       | Integer | (ACTIVE = 1, BLOCKED = -1)
+|===
+
+=== addUserRole
+
+`CrmUserRole addUserRole(CrmUser user, String rolename, Date expires, Long tenant)`
+
+Assigns a role to a user. The `rolename` parameter is usually *admin*, *user* or *guest*.
+If the role is time-restricted you can specify an *expires* date. After that date the role will no longer be active.
+
+== Changes
+
+2.0.1:: The event crm.tenantCreated is now sent synchronously
+2.0.0:: First public release
+
+== License
+
+{license}
+
+== Source Code
+
+The source code for this plugin is available at {gr8source}
+
+== Contributing
+
+Please report {gr8source}/issues[issues or suggestions].
+
+Want to improve the plugin: Fork the {gr8source}[repository] and send a pull request.

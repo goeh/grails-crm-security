@@ -56,7 +56,7 @@ class CrmTenantSpec extends grails.test.spock.IntegrationSpec {
         def swedish = new Locale("sv", "SE")
         def spanish = new Locale("es", "ES")
         def user = crmSecurityService.createUser([username: "test16", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
-        def account = crmSecurityService.runAs(user.username) { crmAccountService.createAccount() }
+        def account = crmSecurityService.runAs(user.username) { crmAccountService.createAccount(status: CrmAccount.STATUS_ACTIVE) }
 
         when:
         crmSecurityService.runAs(user.username) {
@@ -75,7 +75,7 @@ class CrmTenantSpec extends grails.test.spock.IntegrationSpec {
 
         given:
         def user = crmSecurityService.createUser([username: "test6", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
-        def account = crmSecurityService.runAs(user.username) { crmAccountService.createAccount() }
+        def account = crmSecurityService.runAs(user.username) { crmAccountService.createAccount(status: CrmAccount.STATUS_ACTIVE) }
 
         when:
         crmSecurityService.runAs(user.username) { tenant = crmSecurityService.createTenant(account, "My Tenant") }
@@ -94,7 +94,7 @@ class CrmTenantSpec extends grails.test.spock.IntegrationSpec {
 
         given:
         def user = crmSecurityService.createUser([username: "test7", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
-        def account = crmSecurityService.runAs(user.username) { crmAccountService.createAccount() }
+        def account = crmSecurityService.runAs(user.username) { crmAccountService.createAccount(status: CrmAccount.STATUS_ACTIVE) }
 
         when:
         crmSecurityService.runAs(user.username) {
@@ -117,7 +117,7 @@ class CrmTenantSpec extends grails.test.spock.IntegrationSpec {
         def t
 
         crmSecurityService.runAs(user.username) {
-            def account = crmAccountService.createAccount()
+            def account = crmAccountService.createAccount(status: CrmAccount.STATUS_ACTIVE)
             t = crmSecurityService.createTenant(account, "test")
         }
 
