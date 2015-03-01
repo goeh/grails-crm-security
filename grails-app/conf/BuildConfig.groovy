@@ -18,7 +18,6 @@ grails.project.dependency.resolution = {
     repositories {
         grailsCentral()
         mavenLocal()
-        mavenRepo "http://labs.technipelago.se/repo/plugins-releases-local/"
         mavenCentral()
     }
     dependencies {
