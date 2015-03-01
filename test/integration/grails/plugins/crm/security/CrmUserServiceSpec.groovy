@@ -18,7 +18,7 @@ package grails.plugins.crm.security
 /**
  * Created by goran on 2014-10-29.
  */
-class CrmUserServiceSpec extends grails.plugin.spock.IntegrationSpec {
+class CrmUserServiceSpec extends grails.test.spock.IntegrationSpec {
 
     def grailsApplication
     def crmSecurityService

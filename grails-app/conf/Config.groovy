@@ -20,6 +20,6 @@ log4j = {
            'org.hibernate',
            'net.sf.ehcache.hibernate'
 
-    debug 'net.sf.ehcache'
-    debug 'grails.plugin.cache'
+    //debug 'net.sf.ehcache'
+    //debug 'grails.plugin.cache'
 }
