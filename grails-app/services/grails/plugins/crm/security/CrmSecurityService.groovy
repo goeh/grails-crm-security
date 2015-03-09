@@ -23,6 +23,7 @@ import grails.plugins.crm.core.TenantUtils
 import grails.plugins.crm.core.Pair
 import grails.plugins.crm.util.Graph
 import groovy.transform.CompileStatic
+import grails.compiler.GrailsCompileStatic
 import org.codehaus.groovy.grails.web.metaclass.BindDynamicMethod
 import org.codehaus.groovy.grails.web.util.WebUtils
 import org.grails.plugin.platform.events.EventMessage
@@ -49,6 +50,7 @@ class CrmSecurityService {
      *
      * @return
      */
+    @CompileStatic
     boolean isAuthenticated() {
         crmSecurityDelegate.isAuthenticated()
     }
@@ -59,6 +61,7 @@ class CrmSecurityService {
      * @param permission wildcard permission
      * @return
      */
+    @CompileStatic
     boolean isPermitted(permission) {
         crmSecurityDelegate.isPermitted(permission.toString())
     }
@@ -104,6 +107,7 @@ class CrmSecurityService {
         }
     }
 
+    @GrailsCompileStatic
     private CrmUser getEnabledUser(String username) {
         CrmUser.findByUsernameAndStatus(username, CrmUser.STATUS_ACTIVE, [cache: true])
     }
@@ -636,6 +640,7 @@ class CrmSecurityService {
      * @param username (optional) username or null for current user
      * @return CrmUser instance
      */
+    @GrailsCompileStatic
     CrmUser getUser(String username = null) {
         if (!username) {
             username = crmSecurityDelegate.currentUser
@@ -650,6 +655,7 @@ class CrmSecurityService {
      * @param arg Long (id), String (username) or CrmUser instance.
      * @return true if the current user is the same as specified user parameter
      */
+    @GrailsCompileStatic
     boolean isCurrentUser(arg) {
         def username = crmSecurityDelegate.currentUser
         if (arg instanceof Number) {
