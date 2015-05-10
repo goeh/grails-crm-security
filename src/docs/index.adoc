@@ -203,9 +203,10 @@ If the role is time-restricted you can specify an *expires* date. After that dat
 
 == Changes
 
-2.0.2:: Fixed bug where permissions from "theme features" was installed in tenants not using the theme
-2.0.1:: The event crm.tenantCreated is now sent synchronously
-2.0.0:: First public release
+2.0.3:: Fixed bug where permissions from "theme features" was installed in tenants not using the theme.
+2.0.2:: Added method `CrmSecurityService#deleteRole(CrmUserRole)`.
+2.0.1:: The event crm.tenantCreated is now sent synchronously.
+2.0.0:: First public release.
 
 == License
 
