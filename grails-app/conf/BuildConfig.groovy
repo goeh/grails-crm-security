@@ -8,8 +8,11 @@ grails.project.dependency.resolution = {
     log "warn"
     legacyResolve false
     repositories {
+        mavenRepo "http://repo.grails.org/grails/repo/"
         grailsCentral()
+        mavenLocal()
         mavenCentral()
+        mavenRepo "http://labs.technipelago.se/repo/crm-releases-local/"
     }
     dependencies {
         test "org.spockframework:spock-grails-support:0.7-groovy-2.0"
@@ -36,7 +39,7 @@ grails.project.dependency.resolution = {
         compile ":cache:1.1.1"
         compile ":simple-captcha:0.8.5"
 
-        compile ":crm-core:2.0.2"
-        compile ":crm-feature:2.0.0"
+        compile ":crm-core:2.0.3"
+        compile ":crm-feature:2.0.1"
     }
 }
