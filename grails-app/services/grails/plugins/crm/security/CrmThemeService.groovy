@@ -33,7 +33,6 @@ class CrmThemeService {
     private static final String OPTION_EMAIL_FROM = "mail.from"
 
     def grailsApplication
-    def crmSecurityService
 
     CacheManager grailsCacheManager
 
@@ -152,6 +151,13 @@ class CrmThemeService {
         }
         def config = grailsApplication.config.crm.theme.name
         return config ? config.toString() : null
+    }
+
+    boolean hasTheme(String name, Long tenant = null) {
+        if(tenant == null) {
+            tenant = TenantUtils.tenant
+        }
+        getThemeName(tenant) == name
     }
 
     void setEmailSenderForAccount(Long account, String email) {

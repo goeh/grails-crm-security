@@ -19,6 +19,9 @@ package grails.plugins.crm.security
 class CrmSecurityServiceSpec extends grails.test.spock.IntegrationSpec {
 
     def crmSecurityService
+    def crmFeatureService
+    def crmThemeService
+    def crmAccountService
 
     def "runAs changes current user"() {
         def result
@@ -75,5 +78,78 @@ class CrmSecurityServiceSpec extends grails.test.spock.IntegrationSpec {
         crmSecurityService.removePermissionAlias "bar"
         !crmSecurityService.getPermissionAlias("foo")
         !crmSecurityService.getPermissionAlias("bar")
+    }
+
+    def "theme feature"() {
+        // Add a feature that should only be available under a specific theme.
+        given:
+        crmFeatureService.addApplicationFeatures {
+            vanilla {
+                description "A feature available for all tenant"
+                link controller: "vanilla", action: "index"
+                permissions {
+                    read "vanilla:index,list,show"
+                    update "vanilla:index,list:show,create,update"
+                    admin "vanilla:*"
+                }
+                enabled true
+            }
+        }
+        crmFeatureService.addApplicationFeatures {
+            sunny {
+                description "A feature only available in tenants with the 'sunny' theme"
+                link controller: "sunny", action: "index"
+                permissions {
+                    read "sunny:index,list,show"
+                    update "sunny:index,list:show,create,update"
+                    admin "sunny:*"
+                }
+                theme "sunny"
+                enabled true
+            }
+        }
+
+        when:
+        def user = crmSecurityService.createUser([username: "test13", name: "Test User", email: "test@test.com", password: "test123", status: CrmUser.STATUS_ACTIVE])
+        def tenant1 = crmSecurityService.runAs(user.username) {
+            def account = crmAccountService.createAccount(name: "Theme Account", status: CrmAccount.STATUS_ACTIVE)
+            crmSecurityService.createTenant(account, "The sunny tenant", [theme: 'sunny'])
+        }
+
+        then:
+        !crmThemeService.hasTheme('vanilla', tenant1.id)
+        crmThemeService.hasTheme('sunny', tenant1.id)
+
+        when:
+        def permissions = CrmRole.findAllByTenantId(tenant1.id).collect { it.permissions }.flatten()
+
+        then:
+        permissions.contains('vanilla.admin')
+        permissions.contains('vanilla.update')
+        permissions.contains('vanilla.read')
+        permissions.contains('sunny.admin')
+        permissions.contains('sunny.admin')
+        permissions.contains('sunny.admin')
+
+        when:
+        def tenant2 = crmSecurityService.runAs(user.username) {
+            def account = crmAccountService.createAccount(name: "Vanilla Account", status: CrmAccount.STATUS_ACTIVE)
+            crmSecurityService.createTenant(account, "The vanilla tenant")
+        }
+
+        then:
+        !crmThemeService.hasTheme('vanilla', tenant2.id)
+        !crmThemeService.hasTheme('sunny', tenant2.id)
+
+        when:
+        permissions = CrmRole.findAllByTenantId(tenant2.id).collect { it.permissions }.flatten()
+
+        then:
+        permissions.contains('vanilla.admin')
+        permissions.contains('vanilla.update')
+        permissions.contains('vanilla.read')
+        !permissions.contains('sunny.admin')
+        !permissions.contains('sunny.admin')
+        !permissions.contains('sunny.admin')
     }
 }

@@ -41,6 +41,7 @@ class CrmSecurityService {
 
     def grailsApplication
     def crmFeatureService
+    def crmThemeService
 
     CrmSecurityDelegate crmSecurityDelegate
     CacheManager grailsCacheManager
@@ -252,6 +253,11 @@ class CrmSecurityService {
         // Create new tenant.
         def tenant = new CrmTenant(account: account, name: tenantName, parent: parent, locale: params.remove('locale')?.toString())
 
+        if(params['theme'] && !params[CrmThemeService.OPTION_THEME_NAME]) {
+            params[CrmThemeService.OPTION_THEME_NAME] = params['theme']
+            params.remove('theme')
+        }
+
         params.each { key, value ->
             tenant.setOption(key, value)
         }
@@ -297,12 +303,18 @@ class CrmSecurityService {
                 permissions = [(role): permissions[role]]
             }
             if (permissions) {
-                setupFeaturePermissions(feature.name, permissions, event.tenant)
+                Long tenant = event.tenant != null ? event.tenant : TenantUtils.tenant
+                if(feature.theme == null || crmThemeService.hasTheme(feature.theme, tenant)) {
+                    setupFeaturePermissions(feature.name, permissions, tenant)
+                }
             }
         }
     }
 
-    void setupFeaturePermissions(String feature, Map<String, List> permissionMap, Long tenant = TenantUtils.tenant) {
+    void setupFeaturePermissions(String feature, Map<String, List> permissionMap, Long tenant = null) {
+        if(tenant == null) {
+            tenant = TenantUtils.tenant
+        }
         permissionMap.each { roleName, permissions ->
             def role = CrmRole.findByNameAndTenantId(roleName, tenant, [lock: true])
             if (!role) {
