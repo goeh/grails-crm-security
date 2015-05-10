@@ -203,7 +203,11 @@ If the role is time-restricted you can specify an *expires* date. After that dat
 
 == Changes
 
+.Grails 2.4.x branch
+2.4.1:: Fixed bug where permissions from "theme features" was installed in tenants not using the theme.
 2.4.0:: First version compatible with Grails 2.4.4.
+
+.Grails 2.2.x branch
 2.0.3:: Fixed bug where permissions from "theme features" was installed in tenants not using the theme.
 2.0.2:: The list() method in CrmUserService is now compatible with the selection plugin
 2.0.1:: The event crm.tenantCreated is now sent synchronously.
