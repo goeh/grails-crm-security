@@ -126,9 +126,9 @@ class CrmThemeService {
         if (theme == null) {
             final String themeName = getThemeName(id)
             theme = themeName ? new CrmTheme(themeName, getTenantForTheme(themeName) ?: 1L) : null
-            cache.put(id, theme)
+            cache.put(id, theme ?: false)
         }
-        return theme
+        return theme ?: null
     }
 
     String getThemeName(Long tenant) {
