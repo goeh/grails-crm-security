@@ -122,13 +122,13 @@ class CrmThemeService {
      */
     CrmTheme getTheme(Long id) {
         final Cache cache = grailsCacheManager.getCache(CACHE_NAME)
-        CrmTheme theme = cache.get(id)?.get()
+        def theme = cache.get(id)?.get()
         if (theme == null) {
             final String themeName = getThemeName(id)
             theme = themeName ? new CrmTheme(themeName, getTenantForTheme(themeName) ?: 1L) : null
-            cache.put(id, theme)
+            cache.put(id, theme ?: false)
         }
-        return theme
+        return theme ?: null
     }
 
     String getThemeName(Long tenant) {
