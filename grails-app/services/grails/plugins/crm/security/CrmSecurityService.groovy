@@ -597,6 +597,7 @@ class CrmSecurityService {
         }) {
             def u = r.user
             u.removeFromRoles(r)
+            r.delete()
             u.save()
             n++
         }
@@ -605,6 +606,7 @@ class CrmSecurityService {
         for (p in CrmUserPermission.findAllByTenantId(id)) {
             def u = p.user
             u.removeFromPermissions(p)
+            p.delete()
             u.save()
             n++
         }
@@ -612,13 +614,11 @@ class CrmSecurityService {
 
         CrmRole.findAllByTenantId(id)*.delete()
 
-        // Now lets nuke the tenant!
-        crmAccount.removeFromTenants(crmTenant)
-
         CrmTenantLog.findAllByTenantId(id)*.delete()
 
+        // Now lets nuke the tenant!
+        crmAccount.removeFromTenants(crmTenant)
         crmTenant.delete()
-
         crmAccount.save(flush: true)
 
         // Receivers should remove any data associated with the tenant.
