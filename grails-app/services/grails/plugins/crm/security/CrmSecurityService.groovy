@@ -42,6 +42,7 @@ class CrmSecurityService {
     def grailsApplication
     def crmFeatureService
     def crmThemeService
+    def passwordValidatorService
 
     CrmSecurityDelegate crmSecurityDelegate
     CacheManager grailsCacheManager
@@ -1055,5 +1056,23 @@ class CrmSecurityService {
         def salt = crmSecurityDelegate.generateSalt()
         def hash = crmSecurityDelegate.hashPassword(password, salt)
         return new Pair<String, String>(hash, salt.encodeBase64().toString())
+    }
+
+    /**
+     * Validate password.
+     *
+     * @param password password to validate
+     * @param username if specified will validate that username is not in password
+     * @param locale locale for message lookup
+     * @return a list of validation errors or null if password is valid
+     */
+    List<String> validatePassword(String password, String username = null, Locale locale = null) {
+        if (!username) {
+            username = crmSecurityDelegate.currentUser
+        }
+        if(passwordValidatorService != null) {
+            return passwordValidatorService.validatePassword(password, username, locale ?: Locale.getDefault())
+        }
+        return null
     }
 }
