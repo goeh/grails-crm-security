@@ -5,7 +5,7 @@ grails.project.target.level = 1.6
 
 grails.project.fork = [
     //  compile: [maxMemory: 256, minMemory: 64, debug: false, maxPerm: 256, daemon:true],
-    test: false,
+    test: [maxMemory: 768, minMemory: 64, debug: false, maxPerm: 256, forkReserve:false],
     run: [maxMemory: 768, minMemory: 64, debug: false, maxPerm: 256, forkReserve:false],
     war: [maxMemory: 768, minMemory: 64, debug: false, maxPerm: 256, forkReserve:false],
     console: [maxMemory: 768, minMemory: 64, debug: false, maxPerm: 256]
@@ -27,23 +27,23 @@ grails.project.dependency.resolution = {
     }
 
     plugins {
-        build(":release:3.0.1",
-                ":rest-client-builder:1.0.3") {
+        build(":release:3.1.2",
+                ":rest-client-builder:2.1.1") {
             export = false
         }
         test(":hibernate4:4.3.6.1") {
             excludes "net.sf.ehcache:ehcache-core"  // remove this when http://jira.grails.org/browse/GPHIB-18 is resolved
             export = false
         }
-        test(":codenarc:0.24.1") { export = false }
+        test(":codenarc:0.25.2") { export = false }
         test(":code-coverage:2.0.3-3") { export = false }
 
         compile(":cache-ehcache:1.0.5")
         compile ":cache:1.1.8"
         compile ":simple-captcha:1.0.0"
 
-        compile ":crm-core:2.4.2"
-        compile ":crm-feature:2.4.1"
+        compile ":crm-core:2.4.3"
+        compile ":crm-feature:2.4.3"
     }
 }
 
