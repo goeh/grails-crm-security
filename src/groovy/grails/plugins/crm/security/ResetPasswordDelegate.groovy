@@ -22,14 +22,15 @@ import org.apache.log4j.Logger
 /**
  * Delegate for the security-questions plugin that resets user password when forgotten.
  */
-class ResetPasswordDelegate {
+class ResetPasswordDelegate /* implements grails.plugins.resetpassword.ResetPasswordDelegate */ {
 
     def crmSecurityService
     def grailsApplication
 
     Logger log = Logger.getLogger(ResetPasswordDelegate.class)
 
-    def verifyAccount(Map params) {
+    // @Override
+    Map verifyAccount(Map params) {
         def user = CrmUser.findByUsername(params.username)
         if (user) {
             log.debug "resetPassword: Verifying account ${user.username} - ${user.name} ---> $params"
@@ -53,10 +54,12 @@ class ResetPasswordDelegate {
         return false
     }
 
-    def getQuestions(username, questions) {
+    // @Override
+    List<String> getQuestions(String username, List<String> questions) {
         return questions
     }
 
+    // @Override
     boolean resetPassword(String username, String password) {
         log.debug "resetPassword: Changing password for [$username]"
         def user = crmSecurityService.getUser(username)
@@ -67,6 +70,7 @@ class ResetPasswordDelegate {
         return false
     }
 
+    // @Override
     boolean disableAccount(String username) {
         log.warn "resetPassword: Disabling account [$username]"
         def user = crmSecurityService.getUser(username)
