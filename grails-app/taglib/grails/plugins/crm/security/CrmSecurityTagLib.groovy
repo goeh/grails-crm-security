@@ -71,7 +71,7 @@ class CrmSecurityTagLib {
     }
 
     def eachTenant = { attrs, body ->
-        def list = crmSecurityService.getTenants()
+        def list = crmSecurityService.getTenants().sort{it.name}
         list.eachWithIndex { s, i ->
             def map = [(attrs.var ?: 'it'): s]
             if (attrs.status) {
