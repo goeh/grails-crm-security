@@ -19,7 +19,7 @@ import grails.plugins.crm.security.ResetPasswordDelegate
 
 class CrmSecurityGrailsPlugin {
     def groupId = ""
-    def version = "2.4.5-SNAPSHOT"
+    def version = "2.4.5"
     def grailsVersion = "2.4 > *"
     def dependsOn = [:]
     def loadAfter = ['crmCore']
